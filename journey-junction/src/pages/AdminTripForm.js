@@ -111,6 +111,34 @@ const AdminTripForm = () => {
     try {
       const { data } = await adminAPI.getTripById(id);
       setFormData(data);
+      
+      // Only load images that are specifically uploaded for this trip (not default images)
+      if (data.galleryImages && data.galleryImages.length > 0) {
+        // Filter out default/placeholder images - only keep base64 or uploaded images
+        const tripSpecificImages = data.galleryImages.filter(imageUrl => {
+          // Keep images that are base64 encoded (uploaded images)
+          if (imageUrl.startsWith('data:image/')) {
+            return true;
+          }
+          // Skip default images from public/images or assets folders
+          if (imageUrl.includes('/images/') || imageUrl.includes('/assets/') || 
+              imageUrl.includes('default') || imageUrl.includes('placeholder')) {
+            return false;
+          }
+          // Keep other uploaded images (URLs that don't seem to be defaults)
+          return true;
+        });
+        
+        if (tripSpecificImages.length > 0) {
+          const previews = tripSpecificImages.map((url, index) => ({
+            url: url,
+            name: `Existing image ${index + 1}`,
+            isExisting: true,
+            id: `existing-${index}-${Date.now()}`
+          }));
+          setImagePreviews(previews);
+        }
+      }
     } catch (error) {
       console.error('Error fetching trip:', error);
     }
@@ -354,18 +382,19 @@ const AdminTripForm = () => {
           days: parseInt(formData.duration.days) || 1,
           nights: parseInt(formData.duration.nights) || 0
         },
-        // Clean up places to visit - remove location field
+        // Clean up places to visit - only include uploaded images, not default ones
         placesToVisit: formData.placesToVisit.map(place => ({
           placeName: place.placeName || '',
           shortDescription: place.shortDescription || '',
-          image: place.image || ''
+          image: place.image && place.image.startsWith('data:image/') ? place.image : ''
         }))
       };
       
-      // Handle image uploads
+      // Handle image uploads - only include trip-specific images
+      const allImages = [];
+      
+      // Add newly uploaded images
       if (selectedImages.length > 0) {
-        const imageUrls = [];
-        
         for (let i = 0; i < selectedImages.length; i++) {
           const file = selectedImages[i];
           
@@ -377,15 +406,32 @@ const AdminTripForm = () => {
             reader.readAsDataURL(file);
           });
           
-          imageUrls.push(dataUrl);
+          allImages.push(dataUrl);
         }
-        
-        tripData.galleryImages = imageUrls;
-        tripData.coverImage = imageUrls[0];
-      } else if (imagePreviews.length > 0) {
-        const existingImages = imagePreviews.filter(img => img.isExisting).map(img => img.url);
-        tripData.galleryImages = existingImages;
-        tripData.coverImage = existingImages[0];
+      }
+      
+      // Add existing trip-specific images (not default images)
+      if (imagePreviews.length > 0) {
+        const existingTripImages = imagePreviews
+          .filter(img => img.isExisting)
+          .map(img => img.url)
+          .filter(url => {
+            // Only keep base64 images or non-default images
+            return url.startsWith('data:image/') || 
+                   (!url.includes('/images/') && !url.includes('/assets/') && 
+                    !url.includes('default') && !url.includes('placeholder'));
+          });
+        allImages.push(...existingTripImages);
+      }
+      
+      // Only set gallery images if we have trip-specific images
+      if (allImages.length > 0) {
+        tripData.galleryImages = allImages;
+        tripData.coverImage = allImages[0];
+      } else {
+        // No trip-specific images, don't set any images
+        tripData.galleryImages = [];
+        delete tripData.coverImage;
       }
       
       // Convert dates properly

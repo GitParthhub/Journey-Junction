@@ -3,10 +3,14 @@ import { tripAPI } from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 import './Dashboard.css';
 
 const Dashboard = () => {
   const [trips, setTrips] = useState([]);
+  const [filteredTrips, setFilteredTrips] = useState([]);
+  const [activeFilter, setActiveFilter] = useState('all');
+  const [loading, setLoading] = useState(true);
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
 
@@ -24,10 +28,27 @@ const Dashboard = () => {
 
   const fetchTrips = async () => {
     try {
+      setLoading(true);
       const { data } = await tripAPI.getMyTrips();
       setTrips(data);
+      setFilteredTrips(data);
     } catch (error) {
       console.error('Error fetching trips:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filterTrips = (status) => {
+    setActiveFilter(status);
+    if (status === 'all') {
+      setFilteredTrips(trips);
+    } else {
+      const filtered = trips.filter(trip => {
+        const tripStatus = trip.status || 'planned';
+        return tripStatus.toLowerCase() === status.toLowerCase();
+      });
+      setFilteredTrips(filtered);
     }
   };
 
@@ -82,133 +103,288 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="dashboard">
+    <div className={`dashboard ${user?.role === 'admin' ? 'admin-dashboard' : ''}`}>
       <Navbar />
       <div className="dashboard-container">
-        <div className="dashboard-header">
-          <div className="dashboard-header-bg" style={{ backgroundImage: `url(/images/bali.webp)` }}></div>
-          <div className="dashboard-header-overlay"></div>
-          <div className="dashboard-header-content">
-            <div className="dashboard-welcome">
-              <h1>Welcome back, {user?.name}</h1>
-              <p>Manage your travel plans and discover new destinations</p>
+        {/* Hero Section */}
+        <div className="dashboard-hero">
+          <div className="hero-content">
+            <div className="hero-text">
+              <h1>Welcome back, {user?.name}!</h1>
+              <p>
+                {user?.role === 'admin' 
+                  ? 'Manage trip packages, users, and platform analytics' 
+                  : 'Plan amazing adventures and manage your travel experiences'
+                }
+              </p>
             </div>
-            {user?.role !== 'admin' && (
-              <button onClick={() => navigate('/plan-trip')} className="btn-new-trip">
-                <span>+</span>
-                New Trip
-              </button>
+            <div className="hero-actions">
+              {user?.role !== 'admin' ? (
+                <>
+                  <button onClick={() => navigate('/plan-trip')} className="btn-primary-hero">
+                    <span>✈️</span>
+                    Plan Your Trip
+                  </button>
+                  <button onClick={() => navigate('/featured')} className="btn-secondary-hero">
+                    Explore Featured
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button onClick={() => navigate('/admin/trips/new')} className="btn-primary-hero">
+                    <span>➕</span>
+                    Create Trip Package
+                  </button>
+                  <button onClick={() => navigate('/admin')} className="btn-secondary-hero">
+                    Admin Panel
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="quick-actions">
+          <div className="section-header">
+            <h2 className="section-title">Quick Actions</h2>
+          </div>
+          <div className="actions-grid">
+            {user?.role !== 'admin' ? (
+              <>
+                <div className="action-card" onClick={() => navigate('/plan-trip')}>
+                  <div className="action-icon">✈️</div>
+                  <h3 className="action-title">Plan Your Trip</h3>
+                  <p className="action-description">Start planning your next amazing adventure</p>
+                </div>
+                <div className="action-card" onClick={() => navigate('/featured')}>
+                  <div className="action-icon">⭐</div>
+                  <h3 className="action-title">Featured Trips</h3>
+                  <p className="action-description">Discover amazing trips curated by our community</p>
+                </div>
+                <div className="action-card" onClick={() => navigate('/notifications')}>
+                  <div className="action-icon">🔔</div>
+                  <h3 className="action-title">Notifications</h3>
+                  <p className="action-description">Stay updated with your trip activities</p>
+                </div>
+                <div className="action-card" onClick={() => navigate('/settings')}>
+                  <div className="action-icon">⚙️</div>
+                  <h3 className="action-title">Settings</h3>
+                  <p className="action-description">Manage your profile and preferences</p>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="action-card admin" onClick={() => navigate('/admin/trips/new')}>
+                  <div className="action-icon">🎆</div>
+                  <h3 className="action-title">Create Trip Package</h3>
+                  <p className="action-description">Design new travel experiences for users</p>
+                </div>
+                <div className="action-card admin" onClick={() => navigate('/admin')}>
+                  <div className="action-icon">📈</div>
+                  <h3 className="action-title">Analytics Dashboard</h3>
+                  <p className="action-description">View platform statistics and user insights</p>
+                </div>
+                <div className="action-card admin" onClick={() => navigate('/featured')}>
+                  <div className="action-icon">🌟</div>
+                  <h3 className="action-title">Manage Featured</h3>
+                  <p className="action-description">Curate and promote the best travel experiences</p>
+                </div>
+              </>
             )}
           </div>
         </div>
 
+        {/* Trips Section */}
         <div className="trips-section">
-          <h2 className="section-title">Your Trips</h2>
+          <div className="section-header">
+            <h2 className="section-title">{user?.role === 'admin' ? 'Trip Packages' : 'Your Trips'}</h2>
+            
+            {/* Filter Buttons */}
+            <div className="trip-filters">
+              <button 
+                className={`filter-btn ${activeFilter === 'all' ? 'active' : ''}`}
+                onClick={() => filterTrips('all')}
+              >
+                All ({trips.length})
+              </button>
+              <button 
+                className={`filter-btn ${activeFilter === 'planned' ? 'active' : ''}`}
+                onClick={() => filterTrips('planned')}
+              >
+                Planned ({trips.filter(t => (t.status || 'planned').toLowerCase() === 'planned').length})
+              </button>
+              <button 
+                className={`filter-btn ${activeFilter === 'ongoing' ? 'active' : ''}`}
+                onClick={() => filterTrips('ongoing')}
+              >
+                Ongoing ({trips.filter(t => (t.status || 'planned').toLowerCase() === 'ongoing').length})
+              </button>
+              <button 
+                className={`filter-btn ${activeFilter === 'completed' ? 'active' : ''}`}
+                onClick={() => filterTrips('completed')}
+              >
+                Completed ({trips.filter(t => (t.status || 'planned').toLowerCase() === 'completed').length})
+              </button>
+            </div>
+          </div>
           
-          {trips.length === 0 ? (
+          {loading ? (
+            <div className="loading-state">
+              <div className="loading-spinner"></div>
+              <p>Loading your trips...</p>
+            </div>
+          ) : filteredTrips.length === 0 && activeFilter !== 'all' ? (
+            <div className="empty-filter-state">
+              <div className="empty-state-icon">🔍</div>
+              <h3>No {activeFilter} trips found</h3>
+              <p>You don't have any {activeFilter} trips yet.</p>
+              <button onClick={() => filterTrips('all')} className="btn btn-secondary">
+                Show All Trips
+              </button>
+            </div>
+          ) : filteredTrips.length === 0 ? (
             <div className="empty-state">
               <div className="empty-state-icon">✈️</div>
-              <h3>No trips planned yet</h3>
-              <p>Start planning your next adventure and create unforgettable memories.</p>
-              {user?.role !== 'admin' && (
+              <h3>{user?.role === 'admin' ? 'No trip packages created yet' : 'No trips planned yet'}</h3>
+              <p>
+                {user?.role === 'admin' 
+                  ? 'Start creating amazing travel packages for your users to discover and book.' 
+                  : 'Start planning your first adventure and create unforgettable memories.'
+                }
+              </p>
+              {user?.role !== 'admin' ? (
                 <button onClick={() => navigate('/plan-trip')} className="btn btn-primary">
                   Plan Your First Trip
                 </button>
-              )}
-              {user?.role === 'admin' && (
-                <button onClick={() => navigate('/admin')} className="btn btn-primary">
-                  Go to Admin Panel
+              ) : (
+                <button onClick={() => navigate('/admin/trips/new')} className="btn btn-primary">
+                  Create First Package
                 </button>
               )}
             </div>
           ) : (
             <div className="trips-grid">
-              {trips.map((trip, index) => (
-                <div key={trip._id} className="trip-card">
-                  <img 
-                    src={getImageForTrip(trip, index)} 
-                    alt={trip.title}
-                    className="trip-image"
-                    onError={(e) => {
-                      e.target.src = defaultImages[0];
-                    }}
-                  />
-                  <div className="trip-content">
-                    <h3 className="trip-title">{trip.title}</h3>
-                    <p className="trip-destination">{trip.destination}</p>
-                    <p className="trip-description">
-                      {trip.description || trip.detailedDescription || 'No description available'}
+              {filteredTrips.slice(0, 6).map((trip, index) => (
+                <div key={trip._id} className={`trip-card-new ${trip.status || 'planned'} ${trip.isFeatured ? 'featured-trip' : ''}`}>
+                  <div className="trip-card-header">
+                    <div className="trip-image-wrapper">
+                      <img 
+                        src={getImageForTrip(trip, index)} 
+                        alt={trip.title}
+                        className="trip-image-new"
+                        onError={(e) => {
+                          e.target.src = defaultImages[0];
+                        }}
+                      />
+                      <div className="trip-overlay">
+                        <div className="trip-badges">
+                          <div className={`status-badge ${trip.status || 'planned'}`}>
+                            {(trip.status || 'Planned').charAt(0).toUpperCase() + (trip.status || 'planned').slice(1)}
+                          </div>
+                          {trip.isFeatured && (
+                            <div className="featured-star">
+                              ⭐
+                            </div>
+                          )}
+                        </div>
+                        <div className="trip-quick-actions">
+                          <button 
+                            onClick={() => navigate(`/trip/${trip._id}`)} 
+                            className="quick-action-btn view-btn"
+                            title="View Complete Details"
+                          >
+                            👁️
+                          </button>
+                          <button 
+                            onClick={() => navigate(`/admin/trips/${trip._id}/edit`)} 
+                            className="quick-action-btn edit-btn"
+                            title="Edit Trip"
+                          >
+                            ✏️
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="trip-card-body">
+                    <div className="trip-header-info">
+                      <h3 className="trip-title-new">{trip.title}</h3>
+                      <div className="trip-destination-new">
+                        <span className="location-icon">📍</span>
+                        {trip.destination}
+                      </div>
+                    </div>
+                    
+                    <p className="trip-description-new">
+                      {trip.description || trip.detailedDescription || trip.shortDescription || 'No description available'}
                     </p>
                     
-                    {/* Trip Highlights */}
-                    {trip.highlights && (
-                      <div className="trip-highlights">
-                        <h4 className="highlights-title">✨ Highlights</h4>
-                        <p className="highlights-text">{trip.highlights}</p>
+                    <div className="trip-details-grid">
+                      <div className="detail-item">
+                        <div className="detail-icon">⏱️</div>
+                        <div className="detail-content">
+                          <span className="detail-label">Duration</span>
+                          <span className="detail-value">
+                            {trip.startDate && trip.endDate 
+                              ? formatDateRange(trip.startDate, trip.endDate)
+                              : trip.duration?.days 
+                                ? `${trip.duration.days} days`
+                                : 'Flexible'
+                            }
+                          </span>
+                        </div>
                       </div>
-                    )}
-                    
-                    <div className="trip-meta">
-                      <div className="trip-meta-item">
-                        <span className="trip-meta-label">Duration</span>
-                        <span className="trip-meta-value">
-                          {formatDateRange(trip.startDate, trip.endDate)}
-                        </span>
-                      </div>
-                      <div className="trip-meta-item">
-                        <span className="trip-meta-label">Budget</span>
-                        <span className="trip-meta-value">{formatCurrency(trip.budget)}</span>
+                      
+                      <div className="detail-item">
+                        <div className="detail-icon">💰</div>
+                        <div className="detail-content">
+                          <span className="detail-label">Budget</span>
+                          <span className="detail-value">
+                            {formatCurrency(trip.budget || trip.basePrice || 0)}
+                          </span>
+                        </div>
                       </div>
                     </div>
                     
-                    <div className="trip-meta">
-                      <div className="trip-meta-item">
-                        <span className="trip-meta-label">Status</span>
-                        <span className={`trip-status ${trip.status}`}>{trip.status}</span>
-                      </div>
-                      {trip.activities && trip.activities.length > 0 && (
-                        <div className="trip-meta-item">
-                          <span className="trip-meta-label">Activities</span>
-                          <span className="trip-meta-value">{trip.activities.length} planned</span>
-                        </div>
-                      )}
-                      {trip.images && trip.images.length > 1 && (
-                        <div className="trip-meta-item">
-                          <span className="trip-meta-label">Photos</span>
-                          <span className="trip-meta-value">{trip.images.length} photos</span>
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="trip-actions">
-                      <button 
-                        onClick={() => navigate(`/trip/${trip._id}`)} 
-                        className="btn-details"
-                      >
-                        Show Details
-                      </button>
-                      {user?.role !== 'admin' && (
+                    <div className="trip-card-footer">
+                      <div className="trip-actions-new">
                         <button 
-                          onClick={() => navigate(`/plan-trip/${trip._id}`)} 
-                          className="btn-edit"
+                          onClick={() => navigate(`/trip/${trip._id}`)} 
+                          className="btn-primary-new"
+                          title="View complete trip details"
                         >
-                          Edit
+                          <span className="btn-icon">👁️</span>
+                          View Details
                         </button>
-                      )}
-                      <button 
-                        onClick={() => handleDelete(trip._id)} 
-                        className="btn-delete"
-                      >
-                        Delete
-                      </button>
+                        <button 
+                          onClick={() => handleDelete(trip._id)} 
+                          className="btn-danger-new"
+                        >
+                          <span className="btn-icon">🗑️</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
           )}
+          
+          {filteredTrips.length > 6 && (
+            <div style={{ textAlign: 'center', marginTop: '32px' }}>
+              <button 
+                onClick={() => navigate(user?.role === 'admin' ? '/admin' : '/dashboard')} 
+                className="btn-secondary-hero"
+              >
+                View All {activeFilter === 'all' ? '' : activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1)} {user?.role === 'admin' ? 'Packages' : 'Trips'} ({filteredTrips.length})
+              </button>
+            </div>
+          )}
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

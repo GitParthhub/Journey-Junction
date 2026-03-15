@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { adminAPI, tripAPI } from '../services/api';
 import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 import './TripDetails.css';
 
 const TripDetails = () => {
@@ -18,17 +19,28 @@ const TripDetails = () => {
   const fetchTripDetails = async () => {
     try {
       setLoading(true);
-      // Try admin API first, then regular trip API
+      setError('');
       let response;
+      
+      // Try admin API first (for admin users or featured trips)
       try {
         response = await adminAPI.getTripById(id);
+        console.log('Trip data fetched via admin API:', response.data);
       } catch (adminError) {
+        console.log('Admin API failed, trying regular trip API:', adminError.message);
+        // Fallback to regular trip API
         response = await tripAPI.getTripById(id);
+        console.log('Trip data fetched via trip API:', response.data);
       }
-      setTrip(response.data);
+      
+      if (response && response.data) {
+        setTrip(response.data);
+      } else {
+        throw new Error('No trip data received');
+      }
     } catch (error) {
-      setError('Failed to load trip details');
       console.error('Error fetching trip details:', error);
+      setError('Failed to load trip details. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -43,13 +55,17 @@ const TripDetails = () => {
     });
   };
 
-  const formatCurrency = (amount, currency = 'USD') => {
-    if (!amount) return 'Not specified';
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency,
-      minimumFractionDigits: 0
-    }).format(amount);
+  const formatDateRange = (startDate, endDate) => {
+    const start = new Date(startDate).toLocaleDateString('en-GB', {
+      month: 'short',
+      day: 'numeric'
+    });
+    const end = new Date(endDate).toLocaleDateString('en-GB', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+    return `${start} - ${end}`;
   };
 
   if (loading) {
@@ -88,309 +104,386 @@ const TripDetails = () => {
         <div className="trip-header">
           <div className="trip-header-content">
             <div className="trip-badges">
-              {trip.isFeatured && <span className="badge featured">Featured</span>}
+              {trip.tripType && <span className="badge trip-type">{trip.tripType}</span>}
               <span className={`badge status ${trip.status?.toLowerCase()}`}>
-                {trip.status || 'Active'}
+                {trip.status || 'Planned'}
               </span>
-              <span className={`badge category ${trip.category?.toLowerCase()}`}>
-                {trip.category || 'Adventure'}
-              </span>
+              {trip.isFeatured && <span className="badge featured">⭐ Featured</span>}
             </div>
             
             <h1 className="trip-title">{trip.title}</h1>
             <div className="trip-subtitle">
-              <span className="trip-id">Trip ID: {trip.tripId}</span>
-              <span className="trip-destination">📍 {trip.destination}{trip.city ? `, ${trip.city}` : ''}</span>
-            </div>
-            
-            <div className="trip-meta-header">
-              <div className="meta-item">
-                <span className="meta-label">Duration</span>
-                <span className="meta-value">{trip.duration?.days} Days / {trip.duration?.nights} Nights</span>
-              </div>
-              <div className="meta-item">
-                <span className="meta-label">Price</span>
-                <span className="meta-value">{formatCurrency(trip.basePrice, trip.currency)}</span>
-              </div>
-              <div className="meta-item">
-                <span className="meta-label">Group Size</span>
-                <span className="meta-value">{trip.totalSeats} seats</span>
-              </div>
+              <span className="trip-destination">📍 {trip.destinationCity && trip.destinationCountry ? `${trip.destinationCity}, ${trip.destinationCountry}` : trip.destination || 'Destination TBD'}</span>
             </div>
           </div>
           
           <div className="trip-actions">
+            <button onClick={() => navigate(`/trip/${id}/edit`)} className="btn-edit">
+              ✏️ Edit Trip
+            </button>
             <button onClick={() => navigate(-1)} className="btn-back">
               ← Back
             </button>
           </div>
         </div>
 
-        {/* Gallery Section */}
-        {((trip.galleryImages && trip.galleryImages.length > 0) || 
-          (trip.images && trip.images.length > 0) || 
-          trip.image || trip.mainImage) && (
-          <div className="trip-gallery">
-            <div className="gallery-grid">
-              {/* Show trip images or fallback to Bali images */}
-              {(trip.galleryImages || trip.images || [trip.image || trip.mainImage || '/images/bali.webp']).slice(0, 5).map((image, index) => (
-                <div key={index} className={`gallery-item ${index === 0 ? 'main-image' : ''}`}>
-                  <img 
-                    src={image || '/images/bali.webp'} 
-                    alt={`${trip.title} - Image ${index + 1}`} 
-                    onError={(e) => {
-                      e.target.src = '/images/bali.webp';
-                    }}
-                  />
-                  {index === 0 && <div className="cover-badge">Cover Image</div>}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         <div className="trip-content">
-          {/* Description Section */}
+          
+          {/* 1. BASIC TRIP INFORMATION */}
           <div className="content-section">
-            <h2>Trip Description</h2>
-            <div className="description-content">
-              <div className="short-description">
-                <h3>Overview</h3>
-                <p>{trip.shortDescription}</p>
-              </div>
-              <div className="detailed-description">
-                <h3>Detailed Information</h3>
-                <p>{trip.detailedDescription}</p>
-              </div>
+            <h2>1️⃣ Basic Trip Information</h2>
+            <div className="info-grid">
+              {trip.title && (
+                <div className="info-card">
+                  <span className="info-label">Trip Title</span>
+                  <span className="info-value">{trip.title}</span>
+                </div>
+              )}
+              {trip.destinationCountry && (
+                <div className="info-card">
+                  <span className="info-label">Destination Country</span>
+                  <span className="info-value">{trip.destinationCountry}</span>
+                </div>
+              )}
+              {trip.destinationCity && (
+                <div className="info-card">
+                  <span className="info-label">Destination City</span>
+                  <span className="info-value">{trip.destinationCity}</span>
+                </div>
+              )}
+              {trip.tripType && (
+                <div className="info-card">
+                  <span className="info-label">Trip Type</span>
+                  <span className="info-value">{trip.tripType}</span>
+                </div>
+              )}
+              {trip.numberOfTravelers && (
+                <div className="info-card">
+                  <span className="info-label">Number of Travelers</span>
+                  <span className="info-value">{trip.numberOfTravelers}</span>
+                </div>
+              )}
+              {trip.tripDuration && (
+                <div className="info-card">
+                  <span className="info-label">Trip Duration</span>
+                  <span className="info-value">{trip.tripDuration} Days</span>
+                </div>
+              )}
+              {trip.startDate && trip.endDate && (
+                <div className="info-card">
+                  <span className="info-label">Travel Dates</span>
+                  <span className="info-value">{formatDateRange(trip.startDate, trip.endDate)}</span>
+                </div>
+              )}
+              {trip.flexibleDates && (
+                <div className="info-card">
+                  <span className="info-label">Flexible Dates</span>
+                  <span className="info-value">{trip.flexibleDates === 'yes' ? '✅ Yes' : '❌ No'}</span>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Travel Details */}
-          <div className="content-section">
-            <h2>Travel Details</h2>
-            <div className="details-grid">
-              <div className="detail-item">
-                <span className="detail-label">Departure City</span>
-                <span className="detail-value">{trip.departureCity}</span>
-              </div>
-              <div className="detail-item">
-                <span className="detail-label">Arrival Destination</span>
-                <span className="detail-value">{trip.arrivalDestination}</span>
-              </div>
-              <div className="detail-item">
-                <span className="detail-label">Group Size Limit</span>
-                <span className="detail-value">{trip.groupSizeLimit} people</span>
-              </div>
-              <div className="detail-item">
-                <span className="detail-label">Minimum Travelers</span>
-                <span className="detail-value">{trip.minimumTravelers} people</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Available Dates */}
-          {trip.availableDates && trip.availableDates.length > 0 && (
+          {/* 2. TRAVELER DETAILS */}
+          {trip.fullName && (
             <div className="content-section">
-              <h2>Available Dates</h2>
-              <div className="dates-grid">
-                {trip.availableDates.map((dateRange, index) => (
-                  <div key={index} className="date-range">
-                    <span className="date-start">{formatDate(dateRange.startDate)}</span>
-                    <span className="date-separator">to</span>
-                    <span className="date-end">{formatDate(dateRange.endDate)}</span>
+              <h2>2️⃣ Traveler Details</h2>
+              <div className="info-grid">
+                {trip.fullName && (
+                  <div className="info-card">
+                    <span className="info-label">Full Name</span>
+                    <span className="info-value">{trip.fullName}</span>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Pricing Information */}
-          <div className="content-section">
-            <h2>Pricing Information</h2>
-            <div className="pricing-grid">
-              <div className="price-item main-price">
-                <span className="price-label">Base Price per Person</span>
-                <span className="price-value">{formatCurrency(trip.basePrice, trip.currency)}</span>
-              </div>
-              {trip.childPrice > 0 && (
-                <div className="price-item">
-                  <span className="price-label">Child Price</span>
-                  <span className="price-value">{formatCurrency(trip.childPrice, trip.currency)}</span>
-                </div>
-              )}
-              {trip.discountPrice > 0 && (
-                <div className="price-item discount">
-                  <span className="price-label">Discount Price</span>
-                  <span className="price-value">{formatCurrency(trip.discountPrice, trip.currency)}</span>
-                </div>
-              )}
-              {trip.taxes > 0 && (
-                <div className="price-item">
-                  <span className="price-label">Taxes & Fees</span>
-                  <span className="price-value">{formatCurrency(trip.taxes, trip.currency)}</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Itinerary */}
-          {trip.itinerary && trip.itinerary.length > 0 && (
-            <div className="content-section">
-              <h2>Day-by-Day Itinerary</h2>
-              <div className="itinerary-timeline">
-                {trip.itinerary.map((day, index) => (
-                  <div key={index} className="itinerary-day">
-                    <div className="day-number">Day {day.dayNumber}</div>
-                    <div className="day-content">
-                      <h3 className="day-title">{day.dayTitle}</h3>
-                      <p className="day-description">{day.dayDescription}</p>
-                      {day.activitiesIncluded && (
-                        <div className="day-detail">
-                          <strong>Activities:</strong> {day.activitiesIncluded}
-                        </div>
-                      )}
-                      {day.mealsIncluded && (
-                        <div className="day-detail">
-                          <strong>Meals:</strong> {day.mealsIncluded}
-                        </div>
-                      )}
-                      {day.accommodationDetails && (
-                        <div className="day-detail">
-                          <strong>Accommodation:</strong> {day.accommodationDetails}
-                        </div>
-                      )}
-                    </div>
+                )}
+                {trip.email && (
+                  <div className="info-card">
+                    <span className="info-label">Email Address</span>
+                    <span className="info-value">{trip.email}</span>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Places to Visit */}
-          {trip.placesToVisit && trip.placesToVisit.length > 0 && (
-            <div className="content-section">
-              <h2>Places to Visit</h2>
-              <div className="places-grid">
-                {trip.placesToVisit.map((place, index) => (
-                  <div key={index} className="place-card">
-                    {place.image && (
-                      <div className="place-image">
-                        <img src={place.image} alt={place.placeName} />
-                      </div>
-                    )}
-                    <div className="place-content">
-                      <h3 className="place-name">{place.placeName}</h3>
-                      <p className="place-description">{place.shortDescription}</p>
-                    </div>
+                )}
+                {trip.mobileNumber && (
+                  <div className="info-card">
+                    <span className="info-label">Mobile Number</span>
+                    <span className="info-value">{trip.mobileNumber}</span>
                   </div>
-                ))}
+                )}
+                {trip.ageGroup && (
+                  <div className="info-card">
+                    <span className="info-label">Age Group</span>
+                    <span className="info-value">{trip.ageGroup}</span>
+                  </div>
+                )}
+                {trip.nationality && (
+                  <div className="info-card">
+                    <span className="info-label">Nationality</span>
+                    <span className="info-value">{trip.nationality}</span>
+                  </div>
+                )}
+                {trip.passportAvailable && (
+                  <div className="info-card">
+                    <span className="info-label">Passport Available</span>
+                    <span className="info-value">{trip.passportAvailable === 'yes' ? '✅ Yes' : '❌ No'}</span>
+                  </div>
+                )}
+                {trip.emergencyContactName && (
+                  <div className="info-card">
+                    <span className="info-label">Emergency Contact</span>
+                    <span className="info-value">{trip.emergencyContactName}</span>
+                  </div>
+                )}
+                {trip.emergencyContactNumber && (
+                  <div className="info-card">
+                    <span className="info-label">Emergency Contact Number</span>
+                    <span className="info-value">{trip.emergencyContactNumber}</span>
+                  </div>
+                )}
               </div>
             </div>
           )}
 
-          {/* Services & Activities */}
-          <div className="content-section">
-            <h2>What's Included</h2>
-            <div className="services-grid">
-              <div className="services-column">
-                <h3>Included Services</h3>
-                <ul className="services-list">
-                  {Object.entries(trip.includedServices || {}).map(([key, value]) => 
-                    value && (
-                      <li key={key} className="service-included">
-                        ✅ {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                      </li>
-                    )
-                  )}
-                </ul>
-              </div>
-              
-              <div className="services-column">
-                <h3>Activities Included</h3>
-                <ul className="services-list">
-                  {Object.entries(trip.activitiesIncluded || {}).map(([key, value]) => 
-                    value && (
-                      <li key={key} className="activity-included">
-                        🎯 {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                      </li>
-                    )
-                  )}
-                </ul>
-              </div>
-            </div>
-            
-            {trip.excludedServices && trip.excludedServices.length > 0 && (
-              <div className="excluded-services">
-                <h3>Not Included</h3>
-                <ul className="services-list">
-                  {trip.excludedServices.map((service, index) => (
-                    <li key={index} className="service-excluded">
-                      ❌ {service}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-
-          {/* Accommodation Details */}
-          {trip.accommodation && (trip.accommodation.hotelName || trip.accommodation.roomType) && (
+          {/* 3. BUDGET PREFERENCES */}
+          {trip.budgetRange && (
             <div className="content-section">
-              <h2>Accommodation Details</h2>
-              <div className="accommodation-card">
-                <div className="accommodation-details">
-                  {trip.accommodation.hotelName && (
-                    <div className="accommodation-item">
-                      <span className="accommodation-label">Hotel</span>
-                      <span className="accommodation-value">
-                        {trip.accommodation.hotelName}
-                        {trip.accommodation.hotelRating && (
-                          <span className="hotel-rating">
-                            {' '}({trip.accommodation.hotelRating} Star)
-                          </span>
-                        )}
-                      </span>
-                    </div>
-                  )}
-                  {trip.accommodation.roomType && (
-                    <div className="accommodation-item">
-                      <span className="accommodation-label">Room Type</span>
-                      <span className="accommodation-value">{trip.accommodation.roomType}</span>
-                    </div>
-                  )}
-                  {trip.accommodation.location && (
-                    <div className="accommodation-item">
-                      <span className="accommodation-label">Location</span>
-                      <span className="accommodation-value">{trip.accommodation.location}</span>
-                    </div>
-                  )}
-                </div>
+              <h2>3️⃣ Budget Preferences</h2>
+              <div className="info-grid">
+                {trip.budgetRange && (
+                  <div className="info-card highlight">
+                    <span className="info-label">Budget Range</span>
+                    <span className="info-value">{trip.budgetRange}</span>
+                  </div>
+                )}
+                {trip.customBudget && (
+                  <div className="info-card highlight">
+                    <span className="info-label">Custom Budget</span>
+                    <span className="info-value">₹{trip.customBudget}</span>
+                  </div>
+                )}
+                {trip.preferredCurrency && (
+                  <div className="info-card">
+                    <span className="info-label">Preferred Currency</span>
+                    <span className="info-value">{trip.preferredCurrency}</span>
+                  </div>
+                )}
+                {trip.budgetType && (
+                  <div className="info-card">
+                    <span className="info-label">Budget Type</span>
+                    <span className="info-value">{trip.budgetType}</span>
+                  </div>
+                )}
               </div>
             </div>
           )}
 
-          {/* Booking Information */}
-          <div className="content-section">
-            <h2>Booking Information</h2>
-            <div className="booking-info">
-              <div className="booking-item">
-                <span className="booking-label">Total Seats Available</span>
-                <span className="booking-value">{trip.totalSeats}</span>
+          {/* 4. ACCOMMODATION PREFERENCES */}
+          {(trip.hotelCategory || trip.roomType || trip.mealPlan) && (
+            <div className="content-section">
+              <h2>4️⃣ Accommodation Preferences</h2>
+              <div className="info-grid">
+                {trip.hotelCategory && (
+                  <div className="info-card">
+                    <span className="info-label">Hotel Category</span>
+                    <span className="info-value">{trip.hotelCategory}</span>
+                  </div>
+                )}
+                {trip.roomType && (
+                  <div className="info-card">
+                    <span className="info-label">Room Type</span>
+                    <span className="info-value">{trip.roomType}</span>
+                  </div>
+                )}
+                {trip.bedPreference && (
+                  <div className="info-card">
+                    <span className="info-label">Bed Preference</span>
+                    <span className="info-value">{trip.bedPreference}</span>
+                  </div>
+                )}
+                {trip.mealPlan && (
+                  <div className="info-card">
+                    <span className="info-label">Meal Plan</span>
+                    <span className="info-value">{trip.mealPlan}</span>
+                  </div>
+                )}
               </div>
-              {trip.bookingDeadline && (
-                <div className="booking-item">
-                  <span className="booking-label">Booking Deadline</span>
-                  <span className="booking-value">{formatDate(trip.bookingDeadline)}</span>
+            </div>
+          )}
+
+          {/* 5. TRANSPORTATION PREFERENCES */}
+          {(trip.internationalFlightRequired || trip.localTransportType) && (
+            <div className="content-section">
+              <h2>5️⃣ Transportation Preferences</h2>
+              <div className="info-grid">
+                {trip.internationalFlightRequired && (
+                  <div className="info-card">
+                    <span className="info-label">International Flight Required</span>
+                    <span className="info-value">{trip.internationalFlightRequired === 'yes' ? '✅ Yes' : '❌ No'}</span>
+                  </div>
+                )}
+                {trip.preferredDepartureCity && (
+                  <div className="info-card">
+                    <span className="info-label">Preferred Departure City</span>
+                    <span className="info-value">{trip.preferredDepartureCity}</span>
+                  </div>
+                )}
+                {trip.preferredAirline && (
+                  <div className="info-card">
+                    <span className="info-label">Preferred Airline</span>
+                    <span className="info-value">{trip.preferredAirline}</span>
+                  </div>
+                )}
+                {trip.localTransportType && (
+                  <div className="info-card">
+                    <span className="info-label">Local Transport Type</span>
+                    <span className="info-value">{trip.localTransportType}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* 6. ACTIVITIES & EXPERIENCES */}
+          {(trip.selectedActivities?.length > 0 || trip.specialActivitiesRequested) && (
+            <div className="content-section">
+              <h2>6️⃣ Activities & Experiences</h2>
+              {trip.selectedActivities && trip.selectedActivities.length > 0 && (
+                <div className="activities-section">
+                  <h3>Selected Activities</h3>
+                  <div className="tags-container">
+                    {trip.selectedActivities.map((activity, idx) => (
+                      <span key={idx} className="activity-tag">{activity}</span>
+                    ))}
+                  </div>
                 </div>
               )}
-              <div className="booking-item">
-                <span className="booking-label">Trip Organizer</span>
-                <span className="booking-value">{trip.userId?.name || 'Unknown'}</span>
+              {trip.specialActivitiesRequested && (
+                <div className="text-section">
+                  <h3>Special Activities Requested</h3>
+                  <p>{trip.specialActivitiesRequested}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 7. ITINERARY PREFERENCES */}
+          {(trip.numberOfDestinations || trip.mustVisitPlaces || trip.dailyActivityLevel) && (
+            <div className="content-section">
+              <h2>7️⃣ Itinerary Preferences</h2>
+              <div className="info-grid">
+                {trip.numberOfDestinations && (
+                  <div className="info-card">
+                    <span className="info-label">Number of Destinations</span>
+                    <span className="info-value">{trip.numberOfDestinations}</span>
+                  </div>
+                )}
+                {trip.dailyActivityLevel && (
+                  <div className="info-card">
+                    <span className="info-label">Daily Activity Level</span>
+                    <span className="info-value">{trip.dailyActivityLevel}</span>
+                  </div>
+                )}
+              </div>
+              {trip.mustVisitPlaces && (
+                <div className="text-section">
+                  <h3>Must Visit Places</h3>
+                  <p>{trip.mustVisitPlaces}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 8. SPECIAL REQUESTS */}
+          {(trip.dietaryRequirements || trip.accessibilityNeeds || trip.celebrationType || trip.specialNotes) && (
+            <div className="content-section">
+              <h2>8️⃣ Special Requests</h2>
+              <div className="info-grid">
+                {trip.dietaryRequirements && (
+                  <div className="info-card">
+                    <span className="info-label">Dietary Requirements</span>
+                    <span className="info-value">{trip.dietaryRequirements}</span>
+                  </div>
+                )}
+                {trip.accessibilityNeeds && (
+                  <div className="info-card">
+                    <span className="info-label">Accessibility Needs</span>
+                    <span className="info-value">{trip.accessibilityNeeds}</span>
+                  </div>
+                )}
+                {trip.celebrationType && trip.celebrationType !== 'None' && (
+                  <div className="info-card highlight">
+                    <span className="info-label">Celebration Type</span>
+                    <span className="info-value">{trip.celebrationType}</span>
+                  </div>
+                )}
+              </div>
+              {trip.specialNotes && (
+                <div className="text-section">
+                  <h3>Special Notes / Requests</h3>
+                  <p>{trip.specialNotes}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 9. DOCUMENT UPLOAD */}
+          {(trip.passportCopy || trip.idProof || trip.visaDocument) && (
+            <div className="content-section">
+              <h2>9️⃣ Document Upload</h2>
+              <div className="documents-grid">
+                {trip.passportCopy && (
+                  <div className="document-card">
+                    <span className="document-icon">📄</span>
+                    <span className="document-name">Passport Copy</span>
+                    <span className="document-status">✅ Uploaded</span>
+                  </div>
+                )}
+                {trip.idProof && (
+                  <div className="document-card">
+                    <span className="document-icon">📄</span>
+                    <span className="document-name">ID Proof</span>
+                    <span className="document-status">✅ Uploaded</span>
+                  </div>
+                )}
+                {trip.visaDocument && (
+                  <div className="document-card">
+                    <span className="document-icon">📄</span>
+                    <span className="document-name">Visa Document</span>
+                    <span className="document-status">✅ Uploaded</span>
+                  </div>
+                )}
               </div>
             </div>
-          </div>
+          )}
+
+          {/* 10. PAYMENT INFORMATION */}
+          {(trip.paymentMethod || trip.advancePaymentAmount || trip.billingAddress) && (
+            <div className="content-section">
+              <h2>🔟 Payment Information</h2>
+              <div className="info-grid">
+                {trip.paymentMethod && (
+                  <div className="info-card">
+                    <span className="info-label">Payment Method</span>
+                    <span className="info-value">{trip.paymentMethod}</span>
+                  </div>
+                )}
+                {trip.advancePaymentAmount && (
+                  <div className="info-card highlight">
+                    <span className="info-label">Advance Payment Amount</span>
+                    <span className="info-value">₹{trip.advancePaymentAmount}</span>
+                  </div>
+                )}
+              </div>
+              {trip.billingAddress && (
+                <div className="text-section">
+                  <h3>Billing Address</h3>
+                  <p>{trip.billingAddress}</p>
+                </div>
+              )}
+            </div>
+          )}
+
         </div>
       </div>
+      
+      <Footer />
     </div>
   );
 };

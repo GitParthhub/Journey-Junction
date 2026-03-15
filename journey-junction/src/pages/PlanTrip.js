@@ -1,570 +1,890 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useContext } from 'react';
 import { tripAPI } from '../services/api';
-import { useNavigate, useParams } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 import './PlanTrip.css';
 
 const PlanTrip = () => {
   const [formData, setFormData] = useState({
+    // Basic Trip Information
     title: '',
-    destination: '',
-    description: '',
-    detailedDescription: '', // New field for more detailed description
-    highlights: '', // New field for trip highlights
+    destinationCountry: '',
+    destinationCity: '',
+    tripType: '',
+    numberOfTravelers: '',
     startDate: '',
     endDate: '',
-    budget: '',
-    activities: '',
-    status: 'planned'
+    flexibleDates: 'no',
+    
+    // Traveler Details
+    fullName: '',
+    email: '',
+    mobileNumber: '',
+    ageGroup: '',
+    nationality: '',
+    passportAvailable: 'no',
+    emergencyContactName: '',
+    emergencyContactNumber: '',
+    
+    // Budget Preferences
+    budgetRange: '',
+    customBudget: '',
+    preferredCurrency: 'INR',
+    budgetType: '',
+    
+    // Accommodation Preferences
+    hotelCategory: '',
+    roomType: '',
+    bedPreference: '',
+    mealPlan: '',
+    
+    // Transportation Preferences
+    internationalFlightRequired: 'no',
+    preferredDepartureCity: '',
+    preferredAirline: '',
+    localTransportType: '',
+    
+    // Activities & Experiences
+    selectedActivities: [],
+    specialActivitiesRequested: '',
+    
+    // Itinerary Preferences
+    numberOfDestinations: '',
+    mustVisitPlaces: '',
+    dailyActivityLevel: '',
+    
+    // Special Requests
+    dietaryRequirements: '',
+    accessibilityNeeds: '',
+    celebrationType: '',
+    specialNotes: '',
+    
+    // Document Upload
+    passportCopy: null,
+    idProof: null,
+    visaDocument: null,
+    
+    // Payment Information
+    paymentMethod: '',
+    advancePaymentAmount: '',
+    billingAddress: ''
   });
-  const [selectedImages, setSelectedImages] = useState([]);
-  const [imagePreviews, setImagePreviews] = useState([]);
-  const [bestPhotoIndex, setBestPhotoIndex] = useState(0); // Track which image is the best photo
+  
   const [loading, setLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const { user } = useContext(AuthContext);
   const navigate = useNavigate();
-  const { id } = useParams();
-  const isEditing = Boolean(id);
 
-  useEffect(() => {
-    if (id) {
-      fetchTrip();
-    }
-  }, [id]);
+  const tripTypes = ['Adventure', 'Honeymoon', 'Family', 'Solo', 'Group', 'Cultural'];
+  const ageGroups = ['18-25', '26-35', '36-45', '46-55', '56-65', '65+'];
+  const budgetRanges = ['₹50k – ₹1L', '₹1L – ₹2L', '₹2L – ₹5L', 'Custom'];
+  const currencies = ['INR', 'USD', 'EUR', 'GBP'];
+  const budgetTypes = ['Economy', 'Standard', 'Luxury'];
+  const hotelCategories = ['3 Star', '4 Star', '5 Star', 'Resort', 'Homestay'];
+  const roomTypes = ['Single', 'Double', 'Family'];
+  const bedPreferences = ['Twin Bed', 'King Bed'];
+  const mealPlans = ['Breakfast Only', 'Half Board', 'Full Board'];
+  const localTransportTypes = ['Private Car', 'Rental Bike', 'Public Transport', 'Tour Bus'];
+  const activityOptions = ['Sightseeing Tours', 'Adventure Sports', 'Hiking / Trekking', 'Beach Activities', 'Cultural Tours', 'Shopping', 'Food & Wine Experience', 'Photography Tours'];
+  const dailyActivityLevels = ['Relaxed', 'Moderate', 'Busy'];
+  const celebrationTypes = ['Birthday', 'Anniversary', 'Honeymoon', 'None'];
+  const paymentMethods = ['Credit Card', 'Debit Card', 'UPI', 'Net Banking'];
 
-  const fetchTrip = async () => {
-    try {
-      const { data } = await tripAPI.getTripById(id);
-      setFormData({
-        title: data.title,
-        destination: data.destination,
-        description: data.description,
-        detailedDescription: data.detailedDescription || '',
-        highlights: data.highlights || '',
-        startDate: data.startDate.split('T')[0],
-        endDate: data.endDate.split('T')[0],
-        budget: data.budget,
-        activities: data.activities ? data.activities.join(', ') : '',
-        status: data.status
-      });
-      // Handle existing images
-      if (data.images && data.images.length > 0) {
-        setImagePreviews(data.images.map((img, index) => ({ 
-          url: img, 
-          isExisting: true,
-          id: `existing-${index}`
-        })));
-        setBestPhotoIndex(data.bestPhotoIndex || 0);
-      } else if (data.image) {
-        setImagePreviews([{ url: data.image, isExisting: true, id: 'existing-0' }]);
-        setBestPhotoIndex(0);
-      }
-    } catch (error) {
-      console.error('Error fetching trip:', error);
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleActivityChange = (activity) => {
+    setFormData(prev => ({
+      ...prev,
+      selectedActivities: prev.selectedActivities.includes(activity)
+        ? prev.selectedActivities.filter(a => a !== activity)
+        : [...prev.selectedActivities, activity]
+    }));
+  };
+
+  const handleFileChange = (e) => {
+    const { name, files } = e.target;
+    if (files && files[0]) {
+      const file = files[0];
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setFormData(prev => ({
+          ...prev,
+          [name]: event.target.result
+        }));
+      };
+      reader.readAsDataURL(file);
     }
+  };
+
+  const calculateDuration = () => {
+    if (formData.startDate && formData.endDate) {
+      const start = new Date(formData.startDate);
+      const end = new Date(formData.endDate);
+      const duration = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+      return duration > 0 ? duration : 0;
+    }
+    return 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
+
     try {
       const tripData = {
         ...formData,
-        budget: parseFloat(formData.budget),
-        activities: formData.activities.split(',').map(a => a.trim()).filter(a => a),
-        bestPhotoIndex: bestPhotoIndex // Include best photo index
+        tripDuration: calculateDuration(),
+        customBudget: formData.budgetRange === 'Custom' ? parseFloat(formData.customBudget) : null,
+        advancePaymentAmount: parseFloat(formData.advancePaymentAmount) || 0,
+        numberOfTravelers: parseInt(formData.numberOfTravelers) || 1,
+        numberOfDestinations: parseInt(formData.numberOfDestinations) || 1,
+        destination: `${formData.destinationCity}, ${formData.destinationCountry}`
       };
+
+      console.log('Submitting trip data:', tripData);
+      const response = await tripAPI.createTrip(tripData);
+      console.log('Response:', response);
       
-      // Handle image uploads
-      if (selectedImages.length > 0) {
-        const imageUrls = await Promise.all(
-          selectedImages.map(file => {
-            return new Promise((resolve) => {
-              const reader = new FileReader();
-              reader.onload = (e) => resolve(e.target.result);
-              reader.readAsDataURL(file);
-            });
-          })
-        );
-        tripData.images = imageUrls;
-        tripData.mainImage = imageUrls[bestPhotoIndex] || imageUrls[0]; // Set best photo as main image
-      } else if (imagePreviews.length > 0) {
-        const existingImages = imagePreviews.filter(img => img.isExisting).map(img => img.url);
-        tripData.images = existingImages;
-        tripData.mainImage = existingImages[bestPhotoIndex] || existingImages[0];
-      }
-      
-      if (isEditing) {
-        await tripAPI.updateTrip(id, tripData);
+      if (response.data && response.data.success) {
+        setSuccessMessage(response.data.message || 'Trip request created successfully! Our team will review your request and contact you soon.');
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 3000);
       } else {
-        await tripAPI.createTrip(tripData);
+        setSuccessMessage('Trip request created successfully! Our team will review your request and contact you soon.');
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 3000);
       }
-      navigate('/dashboard');
     } catch (error) {
-      console.error('Error saving trip:', error);
-      alert('Error saving trip. Please try again.');
+      console.error('Error creating trip:', error);
+      console.error('Error response:', error.response);
+      const errorMessage = error.response?.data?.message || error.response?.data?.error || error.message || 'Error creating trip. Please try again.';
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleImageChange = (e) => {
-    const files = Array.from(e.target.files);
-    
-    if (files.length === 0) {
-      return;
-    }
-    
-    // Validate file types
-    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    const validFiles = files.filter(file => validTypes.includes(file.type));
-    
-    if (validFiles.length !== files.length) {
-      alert('Please select only image files (JPEG, PNG, WebP)');
-      return;
-    }
-    
-    // Limit to 5 images for better selection
-    if (validFiles.length > 5) {
-      alert('You can upload maximum 5 images');
-      return;
-    }
-    
-    // Clear previous object URLs to prevent memory leaks
-    imagePreviews.forEach(preview => {
-      if (!preview.isExisting) {
-        URL.revokeObjectURL(preview.url);
-      }
-    });
-    
-    setSelectedImages(validFiles);
-    
-    // Create preview URLs
-    const previews = validFiles.map((file, index) => ({
-      url: URL.createObjectURL(file),
-      name: file.name,
-      isExisting: false,
-      id: `new-${index}-${Date.now()}`
-    }));
-    setImagePreviews(previews);
-    setBestPhotoIndex(0); // Reset best photo to first image
-  };
-
-  const setBestPhoto = (index) => {
-    setBestPhotoIndex(index);
-  };
-
-  const removeImage = (index) => {
-    const imageToRemove = imagePreviews[index];
-    const newPreviews = imagePreviews.filter((_, i) => i !== index);
-    const newSelectedImages = selectedImages.filter((_, i) => i !== index);
-    
-    setImagePreviews(newPreviews);
-    setSelectedImages(newSelectedImages);
-    
-    // Clean up object URLs to prevent memory leaks
-    if (imageToRemove && !imageToRemove.isExisting) {
-      URL.revokeObjectURL(imageToRemove.url);
-    }
-  };
-
-  // Cleanup function for component unmount
-  useEffect(() => {
-    return () => {
-      // Clean up all object URLs when component unmounts
-      imagePreviews.forEach(preview => {
-        if (!preview.isExisting) {
-          URL.revokeObjectURL(preview.url);
-        }
-      });
-    };
-  }, [imagePreviews]);
-
-  const handleCancel = () => {
-    navigate('/dashboard');
-  };
-
   return (
     <div className="plan-trip">
       <Navbar />
+      
       <div className="plan-trip-container">
+        {successMessage && (
+          <div className="success-banner">
+            ✅ {successMessage}
+          </div>
+        )}
+
         <div className="plan-trip-header">
-          <h1 className="plan-trip-title">
-            {isEditing ? 'Edit Trip' : 'Plan New Trip'}
-          </h1>
-          <p className="plan-trip-subtitle">
-            {isEditing ? 'Update your travel plans' : 'Create your perfect travel itinerary'}
-          </p>
-          
-          {/* Link to Advanced Trip Form */}
-          {!isEditing && (
-            <div className="advanced-form-link">
-              <p className="link-description">
-                Need more detailed planning? Try our comprehensive trip package creator:
-              </p>
-              <button 
-                type="button" 
-                onClick={() => navigate('/admin/trips/new')}
-                className="btn-advanced"
-              >
-                🚀 Create Advanced Trip Package
-              </button>
-              <span className="link-help">
-                Includes itinerary planning, pricing options, accommodation details, and more!
-              </span>
-            </div>
-          )}
+          <h1>Plan Your Dream Trip</h1>
+          <p>Fill out the form below and our team will create a personalized itinerary for you</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="trip-form">
+        <form onSubmit={handleSubmit} className="trip-planning-form">
+          {/* 1. Basic Trip Information */}
           <div className="form-section">
-            <h3 className="section-title">Basic Information</h3>
-            <div className="form-grid">
+            <h2>1️⃣ Basic Trip Information</h2>
+            
+            <div className="form-group">
+              <label htmlFor="title">Trip Title / Trip Name *</label>
+              <input
+                type="text"
+                id="title"
+                name="title"
+                value={formData.title}
+                onChange={handleInputChange}
+                placeholder="e.g., Summer Vacation in Bali"
+                required
+              />
+            </div>
+
+            <div className="form-row">
               <div className="form-group">
-                <label className="form-label">Trip Title *</label>
+                <label htmlFor="destinationCountry">Destination Country *</label>
                 <input
                   type="text"
-                  name="title"
-                  className="form-input"
-                  placeholder="Enter a memorable title for your trip"
-                  value={formData.title}
+                  id="destinationCountry"
+                  name="destinationCountry"
+                  value={formData.destinationCountry}
                   onChange={handleInputChange}
+                  placeholder="e.g., Indonesia"
                   required
                 />
               </div>
-              
+
               <div className="form-group">
-                <label className="form-label">Destination *</label>
+                <label htmlFor="destinationCity">Destination City / Region *</label>
                 <input
                   type="text"
-                  name="destination"
-                  className="form-input"
-                  placeholder="Where are you going?"
-                  value={formData.destination}
+                  id="destinationCity"
+                  name="destinationCity"
+                  value={formData.destinationCity}
                   onChange={handleInputChange}
+                  placeholder="e.g., Bali"
                   required
                 />
-              </div>
-              
-              <div className="form-group">
-                <label className="form-label">Short Description *</label>
-                <textarea
-                  name="description"
-                  className="form-textarea"
-                  placeholder="Brief overview of your trip (2-3 sentences)"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  rows="3"
-                  required
-                />
-                <span className="form-help">Keep it concise - this will appear on trip cards</span>
-              </div>
-              
-              <div className="form-group">
-                <label className="form-label">Detailed Description</label>
-                <textarea
-                  name="detailedDescription"
-                  className="form-textarea"
-                  placeholder="Tell the full story of your trip - what makes it special, what you'll experience, why others should visit..."
-                  value={formData.detailedDescription}
-                  onChange={handleInputChange}
-                  rows="5"
-                />
-                <span className="form-help">Share the complete experience and details</span>
-              </div>
-              
-              <div className="form-group">
-                <label className="form-label">Trip Highlights</label>
-                <textarea
-                  name="highlights"
-                  className="form-textarea"
-                  placeholder="Key highlights: Best moments, must-see places, unique experiences..."
-                  value={formData.highlights}
-                  onChange={handleInputChange}
-                  rows="3"
-                />
-                <span className="form-help">What are the top 3-5 things that made this trip amazing?</span>
               </div>
             </div>
-          </div>
 
-          <div className="form-section">
-            <h3 className="section-title">Trip Details</h3>
-            <div className="form-grid form-grid-2">
+            <div className="form-row">
               <div className="form-group">
-                <label className="form-label">Start Date *</label>
+                <label htmlFor="tripType">Trip Type *</label>
+                <select
+                  id="tripType"
+                  name="tripType"
+                  value={formData.tripType}
+                  onChange={handleInputChange}
+                  required
+                >
+                  <option value="">Select Trip Type</option>
+                  {tripTypes.map(type => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="numberOfTravelers">Number of Travelers *</label>
+                <input
+                  type="number"
+                  id="numberOfTravelers"
+                  name="numberOfTravelers"
+                  value={formData.numberOfTravelers}
+                  onChange={handleInputChange}
+                  placeholder="e.g., 2"
+                  min="1"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="startDate">Travel Start Date *</label>
                 <input
                   type="date"
+                  id="startDate"
                   name="startDate"
-                  className="form-input"
                   value={formData.startDate}
                   onChange={handleInputChange}
                   required
                 />
               </div>
-              
+
               <div className="form-group">
-                <label className="form-label">End Date *</label>
+                <label htmlFor="endDate">Travel End Date *</label>
                 <input
                   type="date"
+                  id="endDate"
                   name="endDate"
-                  className="form-input"
                   value={formData.endDate}
                   onChange={handleInputChange}
                   required
                 />
               </div>
             </div>
-            
-            <div className="form-grid">
+
+            <div className="form-row">
               <div className="form-group">
-                <label className="form-label">Budget (USD) *</label>
+                <label>Trip Duration (Auto Calculate)</label>
                 <input
-                  type="number"
-                  name="budget"
-                  className="form-input"
-                  placeholder="0"
-                  min="0"
-                  step="0.01"
-                  value={formData.budget}
-                  onChange={handleInputChange}
-                  required
+                  type="text"
+                  value={calculateDuration() ? `${calculateDuration()} days` : 'Select dates'}
+                  readOnly
+                  className="readonly-field"
                 />
-                <span className="form-help">Enter your estimated budget in US dollars</span>
               </div>
-              
+
               <div className="form-group">
-                <label className="form-label">Trip Photos & Best Photo Selection</label>
-                <input
-                  type="file"
-                  name="images"
-                  className="form-input"
-                  multiple
-                  accept="image/jpeg,image/jpg,image/png,image/webp"
-                  onChange={handleImageChange}
-                  style={{ padding: '8px' }}
-                />
-                <span className="form-help">📸 Upload up to 5 photos (JPEG, PNG, WebP). Select your best photo to feature on the trip card.</span>
-                
-                {/* Image Previews with Best Photo Selection */}
-                {imagePreviews.length > 0 && (
-                  <div style={{ marginTop: '16px' }}>
-                    <h4 style={{ margin: '0 0 12px 0', fontSize: '16px', fontWeight: '600', color: '#2d3748' }}>
-                      Select Your Best Photo ({imagePreviews.length} photo{imagePreviews.length > 1 ? 's' : ''})
-                    </h4>
-                    <div style={{ 
-                      display: 'grid', 
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', 
-                      gap: '16px',
-                      marginTop: '12px'
-                    }}>
-                      {imagePreviews.map((preview, index) => (
-                        <div key={preview.id || index} style={{ 
-                          position: 'relative', 
-                          borderRadius: '12px', 
-                          overflow: 'hidden',
-                          border: bestPhotoIndex === index ? '3px solid #4299e1' : '2px solid #e5e7eb',
-                          boxShadow: bestPhotoIndex === index ? '0 4px 12px rgba(66, 153, 225, 0.3)' : 'none',
-                          transition: 'all 0.3s ease'
-                        }}>
-                          <img 
-                            src={preview.url} 
-                            alt={`Preview ${index + 1}`} 
-                            style={{
-                              width: '100%',
-                              height: '140px',
-                              objectFit: 'cover',
-                              display: 'block',
-                              cursor: 'pointer'
-                            }}
-                            onClick={() => setBestPhoto(index)}
-                            onError={(e) => {
-                              e.target.style.display = 'none';
-                            }}
-                            title="Click to set as best photo"
-                          />
-                          
-                          {/* Best Photo Badge */}
-                          {bestPhotoIndex === index && (
-                            <div style={{
-                              position: 'absolute',
-                              top: '8px',
-                              left: '8px',
-                              background: 'linear-gradient(135deg, #4299e1 0%, #3182ce 100%)',
-                              color: 'white',
-                              padding: '4px 8px',
-                              borderRadius: '16px',
-                              fontSize: '11px',
-                              fontWeight: '700',
-                              textTransform: 'uppercase',
-                              letterSpacing: '0.5px',
-                              boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
-                            }}>
-                              ⭐ Best Photo
-                            </div>
-                          )}
-                          
-                          {/* Remove Button */}
-                          <button
-                            type="button"
-                            onClick={() => removeImage(index)}
-                            style={{
-                              position: 'absolute',
-                              top: '8px',
-                              right: '8px',
-                              background: 'rgba(239, 68, 68, 0.9)',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '50%',
-                              width: '28px',
-                              height: '28px',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontSize: '14px',
-                              fontWeight: 'bold',
-                              boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
-                            }}
-                            title="Remove image"
-                          >
-                            ×
-                          </button>
-                          
-                          {/* Photo Number */}
-                          <div style={{
-                            position: 'absolute',
-                            bottom: '8px',
-                            right: '8px',
-                            background: 'rgba(0, 0, 0, 0.7)',
-                            color: 'white',
-                            padding: '4px 8px',
-                            borderRadius: '12px',
-                            fontSize: '11px',
-                            fontWeight: '600'
-                          }}>
-                            {index + 1}
-                          </div>
-                          
-                          {/* Click to Select Overlay */}
-                          {bestPhotoIndex !== index && (
-                            <div style={{
-                              position: 'absolute',
-                              bottom: '8px',
-                              left: '8px',
-                              background: 'rgba(0, 0, 0, 0.7)',
-                              color: 'white',
-                              padding: '4px 8px',
-                              borderRadius: '12px',
-                              fontSize: '10px',
-                              fontWeight: '500',
-                              opacity: '0.8'
-                            }}>
-                              Click to select
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                    
-                    {/* Best Photo Info */}
-                    <div style={{
-                      marginTop: '12px',
-                      padding: '12px',
-                      background: '#f0f9ff',
-                      borderRadius: '8px',
-                      border: '1px solid #bae6fd'
-                    }}>
-                      <p style={{
-                        margin: '0',
-                        fontSize: '14px',
-                        color: '#0369a1',
-                        fontWeight: '500'
-                      }}>
-                        💡 <strong>Best Photo:</strong> Photo #{bestPhotoIndex + 1} will be featured on your trip card and shown first in galleries.
-                      </p>
-                    </div>
-                  </div>
-                )}
+                <label htmlFor="flexibleDates">Flexible Dates</label>
+                <select
+                  id="flexibleDates"
+                  name="flexibleDates"
+                  value={formData.flexibleDates}
+                  onChange={handleInputChange}
+                >
+                  <option value="no">No</option>
+                  <option value="yes">Yes</option>
+                </select>
               </div>
             </div>
           </div>
 
+          {/* 2. Traveler Details */}
           <div className="form-section">
-            <h3 className="section-title">Activities & Status</h3>
-            <div className="form-grid">
+            <h2>2️⃣ Traveler Details</h2>
+            
+            <div className="form-group">
+              <label htmlFor="fullName">Full Name *</label>
+              <input
+                type="text"
+                id="fullName"
+                name="fullName"
+                value={formData.fullName}
+                onChange={handleInputChange}
+                placeholder="Enter your full name"
+                required
+              />
+            </div>
+
+            <div className="form-row">
               <div className="form-group">
-                <label className="form-label">Activities</label>
+                <label htmlFor="email">Email Address *</label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  placeholder="your.email@example.com"
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="mobileNumber">Mobile Number *</label>
+                <input
+                  type="tel"
+                  id="mobileNumber"
+                  name="mobileNumber"
+                  value={formData.mobileNumber}
+                  onChange={handleInputChange}
+                  placeholder="+91 1234567890"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="ageGroup">Age Group *</label>
+                <select
+                  id="ageGroup"
+                  name="ageGroup"
+                  value={formData.ageGroup}
+                  onChange={handleInputChange}
+                  required
+                >
+                  <option value="">Select Age Group</option>
+                  {ageGroups.map(age => (
+                    <option key={age} value={age}>{age}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="nationality">Nationality *</label>
                 <input
                   type="text"
-                  name="activities"
-                  className="form-input"
-                  placeholder="Hiking, Photography, Local cuisine, Museums"
-                  value={formData.activities}
+                  id="nationality"
+                  name="nationality"
+                  value={formData.nationality}
                   onChange={handleInputChange}
+                  placeholder="e.g., Indian"
+                  required
                 />
-                <span className="form-help">Separate multiple activities with commas</span>
               </div>
-              
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="passportAvailable">Passport Available *</label>
+              <select
+                id="passportAvailable"
+                name="passportAvailable"
+                value={formData.passportAvailable}
+                onChange={handleInputChange}
+                required
+              >
+                <option value="no">No</option>
+                <option value="yes">Yes</option>
+              </select>
+            </div>
+
+            <div className="form-row">
               <div className="form-group">
-                <label className="form-label">Trip Status</label>
-                <div className="status-options">
-                  <div className="status-option">
-                    <input
-                      type="radio"
-                      id="planned"
-                      name="status"
-                      value="planned"
-                      className="status-radio"
-                      checked={formData.status === 'planned'}
-                      onChange={handleInputChange}
-                    />
-                    <label htmlFor="planned" className="status-label">Planned</label>
-                  </div>
-                  <div className="status-option">
-                    <input
-                      type="radio"
-                      id="ongoing"
-                      name="status"
-                      value="ongoing"
-                      className="status-radio"
-                      checked={formData.status === 'ongoing'}
-                      onChange={handleInputChange}
-                    />
-                    <label htmlFor="ongoing" className="status-label">Ongoing</label>
-                  </div>
-                  <div className="status-option">
-                    <input
-                      type="radio"
-                      id="completed"
-                      name="status"
-                      value="completed"
-                      className="status-radio"
-                      checked={formData.status === 'completed'}
-                      onChange={handleInputChange}
-                    />
-                    <label htmlFor="completed" className="status-label">Completed</label>
-                  </div>
+                <label htmlFor="emergencyContactName">Emergency Contact Name</label>
+                <input
+                  type="text"
+                  id="emergencyContactName"
+                  name="emergencyContactName"
+                  value={formData.emergencyContactName}
+                  onChange={handleInputChange}
+                  placeholder="Emergency contact person"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="emergencyContactNumber">Emergency Contact Number</label>
+                <input
+                  type="tel"
+                  id="emergencyContactNumber"
+                  name="emergencyContactNumber"
+                  value={formData.emergencyContactNumber}
+                  onChange={handleInputChange}
+                  placeholder="+91 1234567890"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* 3. Budget Preferences */}
+          <div className="form-section">
+            <h2>3️⃣ Budget Preferences</h2>
+            
+            <div className="form-group">
+              <label htmlFor="budgetRange">Total Budget Range *</label>
+              <select
+                id="budgetRange"
+                name="budgetRange"
+                value={formData.budgetRange}
+                onChange={handleInputChange}
+                required
+              >
+                <option value="">Select Budget Range</option>
+                {budgetRanges.map(range => (
+                  <option key={range} value={range}>{range}</option>
+                ))}
+              </select>
+            </div>
+
+            {formData.budgetRange === 'Custom' && (
+              <div className="form-group">
+                <label htmlFor="customBudget">Custom Budget Amount *</label>
+                <input
+                  type="number"
+                  id="customBudget"
+                  name="customBudget"
+                  value={formData.customBudget}
+                  onChange={handleInputChange}
+                  placeholder="Enter your budget"
+                  min="0"
+                  required
+                />
+              </div>
+            )}
+
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="preferredCurrency">Preferred Currency *</label>
+                <select
+                  id="preferredCurrency"
+                  name="preferredCurrency"
+                  value={formData.preferredCurrency}
+                  onChange={handleInputChange}
+                  required
+                >
+                  {currencies.map(currency => (
+                    <option key={currency} value={currency}>{currency}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="budgetType">Budget Type *</label>
+                <select
+                  id="budgetType"
+                  name="budgetType"
+                  value={formData.budgetType}
+                  onChange={handleInputChange}
+                  required
+                >
+                  <option value="">Select Budget Type</option>
+                  {budgetTypes.map(type => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* 4. Accommodation Preferences */}
+          <div className="form-section">
+            <h2>4️⃣ Accommodation Preferences</h2>
+            
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="hotelCategory">Hotel Category *</label>
+                <select
+                  id="hotelCategory"
+                  name="hotelCategory"
+                  value={formData.hotelCategory}
+                  onChange={handleInputChange}
+                  required
+                >
+                  <option value="">Select Hotel Category</option>
+                  {hotelCategories.map(category => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="roomType">Room Type *</label>
+                <select
+                  id="roomType"
+                  name="roomType"
+                  value={formData.roomType}
+                  onChange={handleInputChange}
+                  required
+                >
+                  <option value="">Select Room Type</option>
+                  {roomTypes.map(type => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="bedPreference">Bed Preference</label>
+                <select
+                  id="bedPreference"
+                  name="bedPreference"
+                  value={formData.bedPreference}
+                  onChange={handleInputChange}
+                >
+                  <option value="">Select Bed Preference</option>
+                  {bedPreferences.map(pref => (
+                    <option key={pref} value={pref}>{pref}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="mealPlan">Meal Plan *</label>
+                <select
+                  id="mealPlan"
+                  name="mealPlan"
+                  value={formData.mealPlan}
+                  onChange={handleInputChange}
+                  required
+                >
+                  <option value="">Select Meal Plan</option>
+                  {mealPlans.map(plan => (
+                    <option key={plan} value={plan}>{plan}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* 5. Transportation Preferences */}
+          <div className="form-section">
+            <h2>5️⃣ Transportation Preferences</h2>
+            
+            <div className="form-group">
+              <label htmlFor="internationalFlightRequired">International Flight Required *</label>
+              <select
+                id="internationalFlightRequired"
+                name="internationalFlightRequired"
+                value={formData.internationalFlightRequired}
+                onChange={handleInputChange}
+                required
+              >
+                <option value="no">No</option>
+                <option value="yes">Yes</option>
+              </select>
+            </div>
+
+            {formData.internationalFlightRequired === 'yes' && (
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="preferredDepartureCity">Preferred Departure City</label>
+                  <input
+                    type="text"
+                    id="preferredDepartureCity"
+                    name="preferredDepartureCity"
+                    value={formData.preferredDepartureCity}
+                    onChange={handleInputChange}
+                    placeholder="e.g., Mumbai"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="preferredAirline">Preferred Airline (Optional)</label>
+                  <input
+                    type="text"
+                    id="preferredAirline"
+                    name="preferredAirline"
+                    value={formData.preferredAirline}
+                    onChange={handleInputChange}
+                    placeholder="e.g., Air India"
+                  />
                 </div>
               </div>
+            )}
+
+            <div className="form-group">
+              <label htmlFor="localTransportType">Local Transport Type *</label>
+              <select
+                id="localTransportType"
+                name="localTransportType"
+                value={formData.localTransportType}
+                onChange={handleInputChange}
+                required
+              >
+                <option value="">Select Transport Type</option>
+                {localTransportTypes.map(type => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* 6. Activities & Experiences */}
+          <div className="form-section">
+            <h2>6️⃣ Activities & Experiences</h2>
+            
+            <div className="form-group">
+              <label>Select Activities (Check all that apply)</label>
+              <div className="checkbox-grid">
+                {activityOptions.map(activity => (
+                  <div key={activity} className="checkbox-item">
+                    <input
+                      type="checkbox"
+                      id={activity}
+                      checked={formData.selectedActivities.includes(activity)}
+                      onChange={() => handleActivityChange(activity)}
+                    />
+                    <label htmlFor={activity}>{activity}</label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="specialActivitiesRequested">Special Activities Requested</label>
+              <textarea
+                id="specialActivitiesRequested"
+                name="specialActivitiesRequested"
+                value={formData.specialActivitiesRequested}
+                onChange={handleInputChange}
+                placeholder="Any specific activities or experiences you'd like to include..."
+                rows="3"
+              />
+            </div>
+          </div>
+
+          {/* 7. Itinerary Preferences */}
+          <div className="form-section">
+            <h2>7️⃣ Itinerary Preferences</h2>
+            
+            <div className="form-group">
+              <label htmlFor="numberOfDestinations">Number of Destinations</label>
+              <input
+                type="number"
+                id="numberOfDestinations"
+                name="numberOfDestinations"
+                value={formData.numberOfDestinations}
+                onChange={handleInputChange}
+                placeholder="e.g., 3"
+                min="1"
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="mustVisitPlaces">Must Visit Places</label>
+              <textarea
+                id="mustVisitPlaces"
+                name="mustVisitPlaces"
+                value={formData.mustVisitPlaces}
+                onChange={handleInputChange}
+                placeholder="List the places you definitely want to visit..."
+                rows="3"
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="dailyActivityLevel">Preferred Daily Activity Level *</label>
+              <select
+                id="dailyActivityLevel"
+                name="dailyActivityLevel"
+                value={formData.dailyActivityLevel}
+                onChange={handleInputChange}
+                required
+              >
+                <option value="">Select Activity Level</option>
+                {dailyActivityLevels.map(level => (
+                  <option key={level} value={level}>{level}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* 8. Special Requests */}
+          <div className="form-section">
+            <h2>8️⃣ Special Requests</h2>
+            
+            <div className="form-group">
+              <label htmlFor="dietaryRequirements">Dietary Requirements</label>
+              <input
+                type="text"
+                id="dietaryRequirements"
+                name="dietaryRequirements"
+                value={formData.dietaryRequirements}
+                onChange={handleInputChange}
+                placeholder="e.g., Vegetarian, Vegan, Gluten-free"
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="accessibilityNeeds">Accessibility Needs</label>
+              <input
+                type="text"
+                id="accessibilityNeeds"
+                name="accessibilityNeeds"
+                value={formData.accessibilityNeeds}
+                onChange={handleInputChange}
+                placeholder="Any special accessibility requirements..."
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="celebrationType">Celebration Type</label>
+              <select
+                id="celebrationType"
+                name="celebrationType"
+                value={formData.celebrationType}
+                onChange={handleInputChange}
+              >
+                <option value="">Select Celebration Type</option>
+                {celebrationTypes.map(type => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="specialNotes">Special Notes / Requests</label>
+              <textarea
+                id="specialNotes"
+                name="specialNotes"
+                value={formData.specialNotes}
+                onChange={handleInputChange}
+                placeholder="Any other special requests or information we should know..."
+                rows="4"
+              />
+            </div>
+          </div>
+
+          {/* 9. Document Upload */}
+          <div className="form-section">
+            <h2>9️⃣ Document Upload</h2>
+            
+            <div className="form-group">
+              <label htmlFor="passportCopy">Passport Copy Upload</label>
+              <input
+                type="file"
+                id="passportCopy"
+                name="passportCopy"
+                onChange={handleFileChange}
+                accept="image/*,.pdf"
+              />
+              {formData.passportCopy && <span className="file-uploaded">✓ File uploaded</span>}
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="idProof">ID Proof Upload</label>
+              <input
+                type="file"
+                id="idProof"
+                name="idProof"
+                onChange={handleFileChange}
+                accept="image/*,.pdf"
+              />
+              {formData.idProof && <span className="file-uploaded">✓ File uploaded</span>}
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="visaDocument">Visa Document Upload</label>
+              <input
+                type="file"
+                id="visaDocument"
+                name="visaDocument"
+                onChange={handleFileChange}
+                accept="image/*,.pdf"
+              />
+              {formData.visaDocument && <span className="file-uploaded">✓ File uploaded</span>}
+            </div>
+          </div>
+
+          {/* 10. Payment Information */}
+          <div className="form-section">
+            <h2>🔟 Payment Information</h2>
+            
+            <div className="form-group">
+              <label htmlFor="paymentMethod">Payment Method *</label>
+              <select
+                id="paymentMethod"
+                name="paymentMethod"
+                value={formData.paymentMethod}
+                onChange={handleInputChange}
+                required
+              >
+                <option value="">Select Payment Method</option>
+                {paymentMethods.map(method => (
+                  <option key={method} value={method}>{method}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="advancePaymentAmount">Advance Payment Amount</label>
+              <input
+                type="number"
+                id="advancePaymentAmount"
+                name="advancePaymentAmount"
+                value={formData.advancePaymentAmount}
+                onChange={handleInputChange}
+                placeholder="Enter advance payment amount"
+                min="0"
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="billingAddress">Billing Address</label>
+              <textarea
+                id="billingAddress"
+                name="billingAddress"
+                value={formData.billingAddress}
+                onChange={handleInputChange}
+                placeholder="Enter your billing address..."
+                rows="3"
+              />
             </div>
           </div>
 
           <div className="form-actions">
-            <button type="button" onClick={handleCancel} className="btn-cancel">
+            <button 
+              type="button" 
+              onClick={() => navigate('/dashboard')} 
+              className="btn-cancel"
+            >
               Cancel
             </button>
-            <button type="submit" className="btn-submit" disabled={loading}>
-              {loading ? 'Saving...' : (isEditing ? 'Update Trip' : 'Create Trip')}
+            <button 
+              type="submit" 
+              className="btn-submit" 
+              disabled={loading}
+            >
+              {loading ? 'Creating Trip Request...' : 'Create Trip'}
             </button>
           </div>
         </form>
       </div>
+      
+      <Footer />
     </div>
   );
 };

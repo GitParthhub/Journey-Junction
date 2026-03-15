@@ -3,7 +3,10 @@ const User = require('../models/User');
 
 exports.getAllTrips = async (req, res) => {
   try {
-    const trips = await Trip.find().populate('userId', 'name email').sort({ createdAt: -1 });
+    const trips = await Trip.find()
+      .populate('userId', 'name email')
+      .populate('applicants.userId', 'name email createdAt')
+      .sort({ createdAt: -1 });
     res.json(trips);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -148,10 +151,127 @@ exports.deleteTripAsAdmin = async (req, res) => {
 
 exports.getTripById = async (req, res) => {
   try {
-    const trip = await Trip.findById(req.params.id).populate('userId', 'name email');
-    if (!trip) return res.status(404).json({ message: 'Trip not found' });
+    console.log('Admin fetching trip by ID:', req.params.id);
+    const trip = await Trip.findById(req.params.id)
+      .populate('userId', 'name email')
+      .populate('applicants.userId', 'name email');
+    
+    if (!trip) {
+      console.log('Trip not found');
+      return res.status(404).json({ message: 'Trip not found' });
+    }
+    
+    console.log('Trip found:', trip.title);
     res.json(trip);
   } catch (error) {
+    console.error('Error fetching trip:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// Get all applicants for admin's trips
+exports.getTripApplicants = async (req, res) => {
+  try {
+    // Get all trips created by admin users
+    const adminTrips = await Trip.find({
+      applicants: { $exists: true, $not: { $size: 0 } }
+    })
+    .populate('userId', 'name email')
+    .populate('applicants.userId', 'name email createdAt')
+    .sort({ createdAt: -1 });
+
+    // Filter trips to only show those with applicants
+    const tripsWithApplicants = adminTrips.filter(trip => trip.applicants && trip.applicants.length > 0);
+
+    res.json(tripsWithApplicants);
+  } catch (error) {
+    console.error('Error fetching trip applicants:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Update applicant status (approve/reject)
+exports.updateApplicantStatus = async (req, res) => {
+  try {
+    const { tripId, applicantId } = req.params;
+    const { status } = req.body;
+
+    if (!['approved', 'rejected', 'pending'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
+
+    const trip = await Trip.findById(tripId).populate('userId', 'name email');
+    if (!trip) {
+      return res.status(404).json({ message: 'Trip not found' });
+    }
+
+    const applicant = trip.applicants.id(applicantId);
+    if (!applicant) {
+      return res.status(404).json({ message: 'Applicant not found' });
+    }
+
+    const oldStatus = applicant.status;
+    applicant.status = status;
+    await trip.save();
+
+    // Send notification to user when status changes
+    if (oldStatus !== status && applicant.userId) {
+      const user = await User.findById(applicant.userId);
+      if (user) {
+        const notificationId = `${tripId}_${applicant._id}_${Date.now()}`;
+        
+        if (status === 'approved') {
+          // Create approval notification with payment request
+          const notification = {
+            id: notificationId,
+            type: 'trip_approved',
+            title: 'Trip Application Approved! 🎉',
+            message: `Congratulations! Your application for "${trip.title}" has been approved. Please proceed with payment to confirm your booking.`,
+            tripId: trip._id,
+            isRead: false,
+            actionRequired: true,
+            actionType: 'payment',
+            actionData: {
+              tripTitle: trip.title,
+              destination: trip.destination,
+              basePrice: trip.basePrice,
+              currency: trip.currency || 'USD',
+              preferredStartDate: applicant.preferredStartDate,
+              preferredEndDate: applicant.preferredEndDate,
+              applicantId: applicant._id, // Include applicant ID for reference
+              image: trip.image // Include trip image
+            }
+          };
+          
+          user.notifications.push(notification);
+        } else if (status === 'rejected') {
+          // Create rejection notification
+          const notification = {
+            id: notificationId,
+            type: 'trip_rejected',
+            title: 'Trip Application Update',
+            message: `Unfortunately, your application for "${trip.title}" was not approved this time. Don't worry, there are many other amazing trips waiting for you!`,
+            tripId: trip._id,
+            isRead: false,
+            actionRequired: false
+          };
+          
+          user.notifications.push(notification);
+        }
+        
+        await user.save();
+        console.log(`Notification sent to user ${user.name} for trip ${trip.title}`);
+      }
+    }
+
+    // Populate the updated trip with user details
+    const updatedTrip = await Trip.findById(tripId)
+      .populate('userId', 'name email')
+      .populate('applicants.userId', 'name email createdAt');
+
+    res.json(updatedTrip);
+  } catch (error) {
+    console.error('Error updating applicant status:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

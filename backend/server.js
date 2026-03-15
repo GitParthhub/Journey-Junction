@@ -20,6 +20,8 @@ app.use((req, res, next) => {
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/trips', require('./routes/trips'));
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/payment', require('./routes/payment'));
+app.use('/api/notifications', require('./routes/notifications'));
 
 app.get('/', (req, res) => {
   res.json({ message: 'Journey Junction API' });

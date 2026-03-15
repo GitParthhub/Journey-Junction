@@ -1,23 +1,51 @@
 .admin-trip-form {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  background: linear-gradient(135deg, #003D5B 0%, #30638E 50%, #00798C 100%);
+  position: relative;
+}
+
+.admin-trip-form::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 20%, rgba(237, 174, 73, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(209, 73, 91, 0.08) 0%, transparent 50%);
+  z-index: 1;
 }
 
 .form-container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
+  position: relative;
+  z-index: 2;
 }
 
 .success-banner {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, #EDAE49 0%, #D1495B 100%);
   color: white;
   padding: 1rem;
   text-align: center;
   font-weight: 600;
   margin-bottom: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(237, 174, 73, 0.4);
+  animation: slideDown 0.5s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .form-header {
@@ -27,26 +55,30 @@
 
 .form-header h1 {
   font-size: 2.5rem;
-  font-weight: 700;
-  color: #1a202c;
+  font-weight: 800;
+  color: white;
   margin-bottom: 0.5rem;
+  text-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
 .form-header p {
   font-size: 1.1rem;
-  color: #4a5568;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
 }
 
 .trip-form {
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.98);
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(20px);
 }
 
 .form-section {
   padding: 2.5rem;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 2px solid rgba(0, 121, 140, 0.1);
 }
 
 .form-section:last-child {
@@ -55,30 +87,31 @@
 
 .form-section h2 {
   font-size: 1.5rem;
-  font-weight: 600;
-  color: #2d3748;
+  font-weight: 700;
+  color: #003D5B;
   margin-bottom: 1.5rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 2px solid #4299e1;
+  padding-bottom: 0.75rem;
+  border-bottom: 3px solid #EDAE49;
   display: inline-block;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .form-section h3 {
   font-size: 1.2rem;
   font-weight: 600;
-  color: #4a5568;
+  color: #30638E;
   margin: 2rem 0 1rem 0;
 }
 
 .form-section h4 {
   font-size: 1.1rem;
   font-weight: 600;
-  color: #2d3748;
+  color: #003D5B;
   margin-bottom: 1rem;
-  padding: 0.5rem 1rem;
-  background: #edf2f7;
-  border-radius: 6px;
-  border-left: 4px solid #4299e1;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, rgba(0, 121, 140, 0.1) 0%, rgba(48, 99, 142, 0.05) 100%);
+  border-radius: 8px;
+  border-left: 4px solid #00798C;
 }
 
 .form-grid {
@@ -99,7 +132,7 @@
 
 .form-group label {
   font-weight: 600;
-  color: #374151;
+  color: #003D5B;
   margin-bottom: 0.5rem;
   font-size: 0.9rem;
 }
@@ -108,8 +141,8 @@
 .form-group select,
 .form-group textarea {
   padding: 0.75rem 1rem;
-  border: 2px solid #e2e8f0;
-  border-radius: 8px;
+  border: 2px solid rgba(0, 121, 140, 0.2);
+  border-radius: 10px;
   font-size: 1rem;
   transition: all 0.3s ease;
   background: white;
@@ -119,13 +152,13 @@
 .form-group select:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #4299e1;
-  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+  border-color: #00798C;
+  box-shadow: 0 0 0 3px rgba(0, 121, 140, 0.1);
 }
 
 .form-group input.readonly {
-  background: #f7fafc;
-  color: #4a5568;
+  background: rgba(0, 121, 140, 0.05);
+  color: #30638E;
   cursor: not-allowed;
 }
 
@@ -137,58 +170,64 @@
 .subsection {
   margin-top: 2rem;
   padding: 1.5rem;
-  background: #f8fafc;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  background: linear-gradient(135deg, rgba(0, 121, 140, 0.05) 0%, rgba(48, 99, 142, 0.03) 100%);
+  border-radius: 12px;
+  border: 2px solid rgba(0, 121, 140, 0.15);
 }
 
 .dynamic-item {
   background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border: 2px solid rgba(0, 121, 140, 0.15);
+  border-radius: 12px;
   padding: 1.5rem;
   margin-bottom: 1rem;
   position: relative;
+  box-shadow: 0 2px 8px rgba(0, 121, 140, 0.08);
 }
 
 .dynamic-item.itinerary-day {
-  border-left: 4px solid #48bb78;
+  border-left: 5px solid #EDAE49;
+  background: linear-gradient(135deg, rgba(237, 174, 73, 0.03) 0%, rgba(255, 255, 255, 1) 100%);
 }
 
 .btn-add {
-  background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+  background: linear-gradient(135deg, #00798C 0%, #30638E 100%);
   color: white;
   border: none;
   padding: 0.75rem 1.5rem;
-  border-radius: 8px;
+  border-radius: 10px;
   font-weight: 600;
   cursor: pointer;
   margin-bottom: 1rem;
   transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 121, 140, 0.3);
 }
 
 .btn-add:hover {
+  background: linear-gradient(135deg, #EDAE49 0%, #D1495B 100%);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
+  box-shadow: 0 6px 20px rgba(237, 174, 73, 0.4);
 }
 
 .btn-remove {
-  background: #e53e3e;
+  background: linear-gradient(135deg, #D1495B 0%, #c53030 100%);
   color: white;
   border: none;
   padding: 0.5rem 1rem;
-  border-radius: 6px;
-  font-weight: 500;
+  border-radius: 8px;
+  font-weight: 600;
   cursor: pointer;
   position: absolute;
   top: 1rem;
   right: 1rem;
   transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(209, 73, 91, 0.3);
 }
 
 .btn-remove:hover {
-  background: #c53030;
+  background: linear-gradient(135deg, #c53030 0%, #9b2c2c 100%);
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(209, 73, 91, 0.4);
 }
 
 .checkbox-grid {
@@ -202,29 +241,32 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
+  background: linear-gradient(135deg, rgba(0, 121, 140, 0.05) 0%, rgba(48, 99, 142, 0.03) 100%);
+  border: 2px solid rgba(0, 121, 140, 0.15);
+  border-radius: 8px;
   transition: all 0.3s ease;
 }
 
 .checkbox-item:hover {
-  background: #edf2f7;
-  border-color: #cbd5e0;
+  background: linear-gradient(135deg, rgba(237, 174, 73, 0.1) 0%, rgba(209, 73, 91, 0.05) 100%);
+  border-color: #EDAE49;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(237, 174, 73, 0.2);
 }
 
 .checkbox-item input[type="checkbox"] {
   width: 18px;
   height: 18px;
-  accent-color: #4299e1;
+  accent-color: #00798C;
   margin: 0;
+  cursor: pointer;
 }
 
 .checkbox-item label {
   margin: 0;
   cursor: pointer;
   font-weight: 500;
-  color: #2d3748;
+  color: #003D5B;
 }
 
 .form-actions {
@@ -232,43 +274,47 @@
   justify-content: flex-end;
   gap: 1rem;
   padding: 2rem;
-  background: #f8fafc;
-  border-top: 1px solid #e2e8f0;
+  background: linear-gradient(135deg, rgba(0, 61, 91, 0.05) 0%, rgba(48, 99, 142, 0.03) 100%);
+  border-top: 2px solid rgba(0, 121, 140, 0.15);
 }
 
 .btn-cancel {
   padding: 1rem 2rem;
-  background: #718096;
+  background: linear-gradient(135deg, #30638E 0%, #003D5B 100%);
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(48, 99, 142, 0.3);
 }
 
 .btn-cancel:hover {
-  background: #4a5568;
+  background: linear-gradient(135deg, #003D5B 0%, #30638E 100%);
   transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(48, 99, 142, 0.4);
 }
 
 .btn-submit {
   padding: 1rem 2rem;
-  background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+  background: linear-gradient(135deg, #EDAE49 0%, #D1495B 100%);
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
   min-width: 200px;
+  box-shadow: 0 4px 15px rgba(237, 174, 73, 0.4);
 }
 
 .btn-submit:hover:not(:disabled) {
+  background: linear-gradient(135deg, #D1495B 0%, #EDAE49 100%);
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(66, 153, 225, 0.3);
+  box-shadow: 0 8px 25px rgba(237, 174, 73, 0.5);
 }
 
 .btn-submit:disabled {
@@ -350,13 +396,22 @@
 
 .empty-itinerary-message {
   text-align: center;
-  color: #6b7280;
+  color: #30638E;
   font-style: italic;
   margin-top: 1rem;
-  padding: 1rem;
-  background: #f9fafb;
-  border-radius: 6px;
-  border: 1px dashed #d1d5db;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, rgba(0, 121, 140, 0.05) 0%, rgba(48, 99, 142, 0.03) 100%);
+  border-radius: 10px;
+  border: 2px dashed rgba(0, 121, 140, 0.3);
+  font-weight: 500;
+}
+
+.form-help {
+  display: block;
+  font-size: 0.85rem;
+  color: #00798C;
+  margin-top: 0.5rem;
+  font-weight: 500;
 }
 
 /* Form Section Animations */
@@ -390,6 +445,7 @@
     transform: translateX(0);
   }
 }
+
 .section-spacing {
   margin-top: 1.5rem;
   margin-bottom: 1rem;
@@ -401,14 +457,14 @@
   resize: vertical;
   font-family: inherit;
   line-height: 1.5;
-  background: #fafbfc;
-  border: 2px solid #e2e8f0;
+  background: linear-gradient(135deg, rgba(0, 121, 140, 0.02) 0%, rgba(48, 99, 142, 0.01) 100%);
+  border: 2px solid rgba(0, 121, 140, 0.2);
   transition: all 0.3s ease;
 }
 
 .form-group textarea[placeholder*="accommodation"]:focus {
   background: white;
-  border-color: #4299e1;
-  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+  border-color: #00798C;
+  box-shadow: 0 0 0 3px rgba(0, 121, 140, 0.1);
   min-height: 120px;
 }

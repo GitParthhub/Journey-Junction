@@ -1,12 +1,69 @@
 const Trip = require('../models/Trip');
+const Notification = require('../models/Notification');
+const User = require('../models/User');
 
 exports.createTrip = async (req, res) => {
   try {
-    const trip = new Trip({ ...req.body, userId: req.user.id });
+    console.log('Creating trip with data:', req.body);
+    
+    // Create trip with user ID
+    const trip = new Trip({ 
+      ...req.body, 
+      userId: req.user.id,
+      status: 'planned' // Set default status for user trips
+    });
+    
     await trip.save();
-    res.status(201).json(trip);
+    console.log('Trip saved successfully:', trip._id);
+    
+    // Get user details
+    const user = await User.findById(req.user.id);
+    console.log('User found:', user.name);
+    
+    // Create notification for admins
+    try {
+      const notification = new Notification({
+        type: 'trip_request',
+        priority: 'high',
+        title: `New Trip Request from ${user.name}`,
+        message: `${user.name} has requested a custom trip plan to ${req.body.destinationCity || req.body.destination || 'destination'}. Please review the details and contact them to finalize the itinerary.`,
+        customer: {
+          id: user._id,
+          name: user.name,
+          email: user.email || req.body.email,
+          phone: req.body.mobileNumber
+        },
+        trip: {
+          id: trip._id,
+          title: req.body.title,
+          destination: req.body.destinationCity ? `${req.body.destinationCity}, ${req.body.destinationCountry}` : req.body.destination,
+          startDate: req.body.startDate,
+          endDate: req.body.endDate,
+          numberOfTravelers: req.body.numberOfTravelers,
+          budgetRange: req.body.budgetRange === 'Custom' ? `₹${req.body.customBudget}` : req.body.budgetRange,
+          tripType: req.body.tripType
+        }
+      });
+      
+      await notification.save();
+      console.log('Notification created successfully');
+    } catch (notifError) {
+      console.error('Error creating notification:', notifError);
+      // Don't fail the trip creation if notification fails
+    }
+    
+    res.status(201).json({ 
+      success: true,
+      message: 'Trip request created successfully! Our team will review your request and contact you soon.',
+      trip 
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    console.error('Error creating trip:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Error creating trip request', 
+      error: error.message 
+    });
   }
 };
 
@@ -33,13 +90,21 @@ exports.getFeaturedTrips = async (req, res) => {
 
 exports.getTripById = async (req, res) => {
   try {
+    console.log('Fetching trip by ID:', req.params.id);
     const trip = await Trip.findById(req.params.id)
       .populate('userId', 'name email')
       .populate('applicants.userId', 'name email');
-    if (!trip) return res.status(404).json({ message: 'Trip not found' });
+    
+    if (!trip) {
+      console.log('Trip not found');
+      return res.status(404).json({ message: 'Trip not found' });
+    }
+    
+    console.log('Trip found:', trip.title);
     res.json(trip);
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error fetching trip:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 

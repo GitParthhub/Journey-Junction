@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { tripAPI } from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 import './FeaturedTrips.css';
 
 const FeaturedTrips = () => {
   const [trips, setTrips] = useState([]);
   const [applyingFor, setApplyingFor] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState({});
+  const [imageTransitioning, setImageTransitioning] = useState({});
   const [showApplicationModal, setShowApplicationModal] = useState(false);
   const [selectedTrip, setSelectedTrip] = useState(null);
   const [applicationData, setApplicationData] = useState({
@@ -16,41 +19,51 @@ const FeaturedTrips = () => {
     message: ''
   });
   const { user } = useContext(AuthContext);
-
-  // Bali-themed default images for carousel
-  const defaultImages = [
-    '/images/bali.webp',
-    '/images/bali-2.jpg',
-    '/images/bali-3.jpg',
-    '/images/ubud-bali.jpg'
-  ];
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchFeaturedTrips();
   }, []);
 
   useEffect(() => {
-    // Initialize carousel for each trip
+    // Initialize carousel for each trip and set up auto-advance
     const intervals = {};
+    
     trips.forEach(trip => {
-      if (!currentImageIndex[trip._id]) {
-        setCurrentImageIndex(prev => ({ ...prev, [trip._id]: 0 }));
-      }
+      const totalImages = getTotalImagesForTrip(trip);
       
-      // Auto-advance carousel every 4 seconds
-      intervals[trip._id] = setInterval(() => {
-        const totalImages = getTotalImagesForTrip(trip);
-        setCurrentImageIndex(prev => ({
-          ...prev,
-          [trip._id]: (prev[trip._id] + 1) % totalImages
-        }));
-      }, 4000);
+      // Set up carousel for all trips since we now have predefined images
+      if (totalImages > 1) {
+        // Initialize current image index if not set
+        if (currentImageIndex[trip._id] === undefined) {
+          setCurrentImageIndex(prev => ({ ...prev, [trip._id]: 0 }));
+        }
+        
+        // Auto-advance carousel every 4 seconds with smooth transition
+        intervals[trip._id] = setInterval(() => {
+          // Start transition
+          setImageTransitioning(prev => ({ ...prev, [trip._id]: true }));
+          
+          setTimeout(() => {
+            setCurrentImageIndex(prev => ({
+              ...prev,
+              [trip._id]: ((prev[trip._id] || 0) + 1) % totalImages
+            }));
+            
+            // End transition
+            setTimeout(() => {
+              setImageTransitioning(prev => ({ ...prev, [trip._id]: false }));
+            }, 50);
+          }, 250);
+        }, 4000);
+      }
     });
 
+    // Cleanup function
     return () => {
       Object.values(intervals).forEach(interval => clearInterval(interval));
     };
-  }, [trips, currentImageIndex]);
+  }, [trips]);
 
   const fetchFeaturedTrips = async () => {
     try {
@@ -61,57 +74,180 @@ const FeaturedTrips = () => {
     }
   };
 
+  // Predefined image sets for different destinations/themes
+  const getImageSetForTrip = (trip) => {
+    const destination = trip.destination?.toLowerCase() || '';
+    const title = trip.title?.toLowerCase() || '';
+    const category = trip.category?.toLowerCase() || '';
+    
+    // Bali-related images
+    if (destination.includes('bali') || title.includes('bali')) {
+      return [
+        '/images/bali.webp',
+        '/images/bali-2.jpg',
+        '/images/bali-3.jpg',
+        '/images/ubud-bali.jpg',
+        '/images/kutabeach.jpeg',
+        '/images/nusapenida.jpeg',
+        '/images/uluwatutemple.jpeg',
+        '/images/Tegallalang Rice Terraces.webp',
+        '/images/with-the-infinity-pool.jpg'
+      ];
+    }
+    
+    // Paris-related images
+    if (destination.includes('paris') || destination.includes('france') || title.includes('paris')) {
+      return [
+        '/images/paris.webp',
+        '/images/paris-2.jpg',
+        '/images/paris-4.jpeg',
+        '/images/notre-dame-de-paris-cathedral-paris-france.webp',
+        '/images/montmartre.jpeg',
+        '/images/seine-river.jpeg'
+      ];
+    }
+    
+    // Beach/tropical destinations
+    if (destination.includes('beach') || destination.includes('island') || 
+        category.includes('beach') || title.includes('beach') || title.includes('tropical')) {
+      return [
+        '/images/beach.jpeg',
+        '/images/kutabeach.jpeg',
+        '/images/nusapenida.jpeg',
+        '/images/with-the-infinity-pool.jpg',
+        '/images/beautiful-girl-standing-boat-looking-mountains-ratchaprapha-dam-khao-sok-national-park-surat-thani-province-thailand_335224-849.avif'
+      ];
+    }
+    
+    // Adventure/cultural trips
+    if (category.includes('adventure') || category.includes('cultural') || 
+        title.includes('adventure') || title.includes('cultural')) {
+      return [
+        '/images/Tegallalang Rice Terraces.webp',
+        '/images/uluwatutemple.jpeg',
+        '/images/scaredmonkey.jpeg',
+        '/images/montmartre.jpeg',
+        '/images/arc.jpeg'
+      ];
+    }
+    
+    // Default image set for general trips
+    return [
+      '/images/bali.webp',
+      '/images/paris.webp',
+      '/images/beach.jpeg',
+      '/images/photo-1476514525535-07fb3b4ae5f1.avif',
+      '/images/background.jpg',
+      '/images/beautiful-girl-standing-boat-looking-mountains-ratchaprapha-dam-khao-sok-national-park-surat-thani-province-thailand_335224-849.avif'
+    ];
+  };
+
   const getImageForTrip = (trip, imageIndex = 0) => {
-    // Handle multiple images from new format
-    if (trip.images && trip.images.length > 0) {
-      const allImages = [...trip.images, ...defaultImages];
-      return allImages[imageIndex % allImages.length];
+    // First check if trip has uploaded images
+    if (trip.galleryImages && trip.galleryImages.length > 0) {
+      const uploadedImages = trip.galleryImages.filter(imageUrl => 
+        imageUrl.startsWith('data:image/') || 
+        (!imageUrl.includes('/images/') && !imageUrl.includes('/assets/') && 
+         !imageUrl.includes('default') && !imageUrl.includes('placeholder'))
+      );
+      
+      if (uploadedImages.length > 0) {
+        return uploadedImages[imageIndex % uploadedImages.length];
+      }
     }
-    // Handle single image from old format
-    if (trip.image) {
-      const images = [trip.image, ...defaultImages];
-      return images[imageIndex % images.length];
+    
+    // Fallback: check for single uploaded image in old format
+    if (trip.image && trip.image.startsWith('data:image/')) {
+      return trip.image;
     }
-    // Use default images only
-    return defaultImages[imageIndex % defaultImages.length];
+    
+    // Use predefined image set based on trip details
+    const imageSet = getImageSetForTrip(trip);
+    return imageSet[imageIndex % imageSet.length];
   };
 
   const getTotalImagesForTrip = (trip) => {
-    if (trip.images && trip.images.length > 0) {
-      return Math.max(3, trip.images.length + defaultImages.length);
+    // First check uploaded images
+    if (trip.galleryImages && trip.galleryImages.length > 0) {
+      const uploadedImages = trip.galleryImages.filter(imageUrl => 
+        imageUrl.startsWith('data:image/') || 
+        (!imageUrl.includes('/images/') && !imageUrl.includes('/assets/') && 
+         !imageUrl.includes('default') && !imageUrl.includes('placeholder'))
+      );
+      if (uploadedImages.length > 0) {
+        return uploadedImages.length;
+      }
     }
-    if (trip.image) {
-      return 3; // 1 custom + 2 default
+    
+    // Check for single uploaded image in old format
+    if (trip.image && trip.image.startsWith('data:image/')) {
+      return 1;
     }
-    return 3; // 3 default images
+    
+    // Return predefined image set count
+    const imageSet = getImageSetForTrip(trip);
+    return imageSet.length;
   };
 
   const nextImage = (tripId, e) => {
     e.stopPropagation();
     const trip = trips.find(t => t._id === tripId);
     const totalImages = getTotalImagesForTrip(trip);
-    setCurrentImageIndex(prev => ({
-      ...prev,
-      [tripId]: (prev[tripId] + 1) % totalImages
-    }));
+    
+    // Start transition
+    setImageTransitioning(prev => ({ ...prev, [tripId]: true }));
+    
+    setTimeout(() => {
+      setCurrentImageIndex(prev => ({
+        ...prev,
+        [tripId]: (prev[tripId] + 1) % totalImages
+      }));
+      
+      // End transition
+      setTimeout(() => {
+        setImageTransitioning(prev => ({ ...prev, [tripId]: false }));
+      }, 50);
+    }, 250);
   };
 
   const prevImage = (tripId, e) => {
     e.stopPropagation();
     const trip = trips.find(t => t._id === tripId);
     const totalImages = getTotalImagesForTrip(trip);
-    setCurrentImageIndex(prev => ({
-      ...prev,
-      [tripId]: prev[tripId] === 0 ? totalImages - 1 : prev[tripId] - 1
-    }));
+    
+    // Start transition
+    setImageTransitioning(prev => ({ ...prev, [tripId]: true }));
+    
+    setTimeout(() => {
+      setCurrentImageIndex(prev => ({
+        ...prev,
+        [tripId]: prev[tripId] === 0 ? totalImages - 1 : prev[tripId] - 1
+      }));
+      
+      // End transition
+      setTimeout(() => {
+        setImageTransitioning(prev => ({ ...prev, [tripId]: false }));
+      }, 50);
+    }, 250);
   };
 
   const goToImage = (tripId, index, e) => {
     e.stopPropagation();
-    setCurrentImageIndex(prev => ({
-      ...prev,
-      [tripId]: index
-    }));
+    
+    // Start transition
+    setImageTransitioning(prev => ({ ...prev, [tripId]: true }));
+    
+    setTimeout(() => {
+      setCurrentImageIndex(prev => ({
+        ...prev,
+        [tripId]: index
+      }));
+      
+      // End transition
+      setTimeout(() => {
+        setImageTransitioning(prev => ({ ...prev, [tripId]: false }));
+      }, 50);
+    }, 250);
   };
 
   const formatCurrency = (amount, currency = 'USD') => {
@@ -203,6 +339,10 @@ const FeaturedTrips = () => {
     return trip.applicants.some(applicant => applicant.userId._id === user.id);
   };
 
+  const handleShowDetails = (tripId) => {
+    navigate(`/trip/${tripId}`);
+  };
+
   return (
     <div className="featured-trips">
       <Navbar />
@@ -238,18 +378,21 @@ const FeaturedTrips = () => {
               <div key={trip._id} className="featured-card">
                 <div className="featured-badge">Featured</div>
                 
-                {/* Image Carousel */}
+                {/* Image Carousel - Always show since we have predefined images */}
                 <div className="image-carousel">
                   <img 
                     src={getImageForTrip(trip, currentImageIndex[trip._id] || 0)} 
                     alt={trip.title}
-                    className="featured-image"
+                    className={`featured-image ${
+                      imageTransitioning[trip._id] ? 'fade-out' : 'fade-in'
+                    }`}
                     onError={(e) => {
-                      e.target.src = defaultImages[0];
+                      // Fallback to a default image if the current one fails to load
+                      e.target.src = '/images/background.jpg';
                     }}
                   />
                   
-                  {/* Carousel Controls */}
+                  {/* Carousel Controls - Always show since we have multiple images */}
                   <button 
                     className="carousel-btn carousel-prev"
                     onClick={(e) => prevImage(trip._id, e)}
@@ -360,7 +503,14 @@ const FeaturedTrips = () => {
                   </div>
                   
                   <div className="featured-actions">
-                    {user && user.id !== trip.userId._id ? (
+                    <button 
+                      className="btn-details"
+                      onClick={() => handleShowDetails(trip._id)}
+                    >
+                      📋 Show Details
+                    </button>
+                    
+                    {user && user.role !== 'admin' && user.id !== trip.userId._id ? (
                       hasUserApplied(trip) ? (
                         <button className="btn-applied" disabled>
                           ✅ Applied
@@ -374,15 +524,18 @@ const FeaturedTrips = () => {
                           {applyingFor === trip._id ? '⏳ Applying...' : '🚀 Apply to Join'}
                         </button>
                       )
-                    ) : user && user.id === trip.userId._id ? (
-                      <button className="btn-own-trip" disabled>
-                        📝 Your Trip
+                    ) : user && (user.role === 'admin' || user.id === trip.userId._id) ? (
+                      <button 
+                        className="btn-edit-trip"
+                        onClick={() => navigate(`/admin/trips/${trip._id}/edit`)}
+                      >
+                        ✏️ Edit Trip
                       </button>
-                    ) : (
+                    ) : !user ? (
                       <button className="btn-login" onClick={() => alert('Please login to apply')}>
                         🔐 Login to Apply
                       </button>
-                    )}
+                    ) : null}
                   </div>
                 </div>
               </div>
@@ -559,6 +712,8 @@ const FeaturedTrips = () => {
           </div>
         </div>
       )}
+      
+      <Footer />
     </div>
   );
 };

@@ -6,6 +6,18 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   role: { type: String, enum: ['user', 'admin'], default: 'user' },
+  notifications: [{
+    id: { type: String, required: true },
+    type: { type: String, enum: ['trip_approved', 'trip_rejected', 'payment_required'], required: true },
+    title: { type: String, required: true },
+    message: { type: String, required: true },
+    tripId: { type: mongoose.Schema.Types.ObjectId, ref: 'Trip' },
+    isRead: { type: Boolean, default: false },
+    createdAt: { type: Date, default: Date.now },
+    actionRequired: { type: Boolean, default: false },
+    actionType: { type: String, enum: ['payment', 'confirmation'] },
+    actionData: { type: mongoose.Schema.Types.Mixed }
+  }],
   createdAt: { type: Date, default: Date.now }
 });
 

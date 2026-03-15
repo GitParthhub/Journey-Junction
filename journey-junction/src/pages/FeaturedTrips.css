@@ -89,6 +89,9 @@
   box-shadow: var(--shadow);
   transition: all 0.15s ease;
   position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .featured-badge {
@@ -113,27 +116,30 @@
 
 .featured-image {
   width: 100%;
-  height: 240px;
+  height: 200px;
   object-fit: cover;
   background: var(--gray-100);
 }
 
 .featured-content {
-  padding: 24px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .featured-card-title {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 600;
   color: var(--gray-900);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .featured-destination {
   color: var(--primary);
   font-weight: 500;
-  font-size: 16px;
-  margin-bottom: 16px;
+  font-size: 14px;
+  margin-bottom: 12px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -146,11 +152,11 @@
 
 .featured-description {
   color: var(--gray-600);
-  font-size: 16px;
-  line-height: 1.6;
-  margin-bottom: 20px;
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 16px;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -158,11 +164,11 @@
 .featured-meta {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-bottom: 20px;
-  padding: 16px;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px;
   background: var(--gray-50);
-  border-radius: 8px;
+  border-radius: 6px;
 }
 
 .featured-meta-item {
@@ -180,20 +186,20 @@
 }
 
 .featured-meta-value {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--gray-900);
 }
 
 .featured-activities {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .activities-label {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--gray-700);
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .activities-tags {
@@ -215,7 +221,8 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding-top: 20px;
+  padding-top: 16px;
+  margin-bottom: 16px;
   border-top: 1px solid var(--gray-200);
 }
 
@@ -307,11 +314,11 @@
 /* Enhanced styles for apply functionality */
 .featured-stats {
   display: flex;
-  gap: 2rem;
-  margin-bottom: 1.5rem;
-  padding: 1rem;
+  gap: 1.5rem;
+  margin-bottom: 1.2rem;
+  padding: 0.8rem;
   background: #f7fafc;
-  border-radius: 8px;
+  border-radius: 6px;
 }
 
 .stat-item {
@@ -320,7 +327,7 @@
 
 .stat-number {
   display: block;
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   font-weight: 700;
   color: #2d3748;
   text-transform: capitalize;
@@ -336,28 +343,56 @@
 
 .featured-actions {
   margin-top: auto;
+  display: flex;
+  gap: 8px;
+  flex-direction: column;
+  align-items: stretch;
+  padding-top: 8px;
 }
 
-.btn-apply {
+.btn-details,
+.btn-apply,
+.btn-applied,
+.btn-own-trip,
+.btn-edit-trip,
+.btn-login {
   width: 100%;
-  padding: 12px 24px;
-  background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
-  color: white;
+  padding: 10px 20px;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 13px;
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
+  text-align: center;
+  box-sizing: border-box;
+  min-height: 40px;
+}
+
+.btn-details {
+  background: linear-gradient(135deg, #00798C 0%, #006B7D 100%);
+  color: white;
+  margin-bottom: 6px;
+}
+
+.btn-details:hover {
+  background: linear-gradient(135deg, #006B7D 0%, #005D6E 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 121, 140, 0.3);
+}
+
+.btn-apply {
+  background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+  color: white;
 }
 
 .btn-apply:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(72, 187, 120, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(72, 187, 120, 0.3);
 }
 
 .btn-apply:disabled {
@@ -366,64 +401,37 @@
 }
 
 .btn-applied {
-  width: 100%;
-  padding: 12px 24px;
   background: #e2e8f0;
   color: #4a5568;
   border: 2px solid #cbd5e0;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 14px;
   cursor: not-allowed;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
 }
 
-.btn-own-trip {
-  width: 100%;
-  padding: 12px 24px;
+.btn-edit-trip {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 14px;
-  cursor: not-allowed;
-  opacity: 0.8;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
+}
+
+.btn-edit-trip:hover {
+  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.3);
 }
 
 .btn-login {
-  width: 100%;
-  padding: 12px 24px;
   background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
   color: white;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
 }
 
 .btn-login:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(237, 137, 54, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(237, 137, 54, 0.3);
 }
 /* Image Carousel Styles */
 .image-carousel {
   position: relative;
   width: 100%;
-  height: 240px;
+  height: 200px;
   overflow: hidden;
 }
 
@@ -431,7 +439,47 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: opacity 0.3s ease;
+  transition: all 0.5s ease-in-out;
+  opacity: 1;
+}
+
+.image-carousel .featured-image.fade-out {
+  opacity: 0;
+}
+
+.image-carousel .featured-image.fade-in {
+  opacity: 1;
+}
+
+/* Image Placeholder Styles */
+.image-placeholder {
+  width: 100%;
+  height: 200px;
+  background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+}
+
+.placeholder-content {
+  text-align: center;
+  color: #a0aec0;
+  transition: all 0.3s ease;
+}
+
+.placeholder-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  transition: all 0.3s ease;
+}
+
+.placeholder-content p {
+  font-size: 16px;
+  font-weight: 500;
+  margin: 0;
 }
 
 .carousel-btn {
@@ -518,8 +566,8 @@
 
 .featured-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
   width: 100%;
   box-sizing: border-box;
 }
