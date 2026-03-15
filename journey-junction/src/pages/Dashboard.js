@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { tripAPI } from '../services/api';
+import { tripAPI, reviewAPI } from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
@@ -11,6 +11,10 @@ const Dashboard = () => {
   const [filteredTrips, setFilteredTrips] = useState([]);
   const [activeFilter, setActiveFilter] = useState('all');
   const [loading, setLoading] = useState(true);
+  const [viewDetailsTrip, setViewDetailsTrip] = useState(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [allReviews, setAllReviews] = useState([]);
+  const [showReviewsModal, setShowReviewsModal] = useState(false);
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
 
@@ -24,6 +28,28 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchTrips();
+    if (user?.role === 'admin') fetchAllReviews();
+  }, []);
+
+  // Refresh trips when returning to dashboard (e.g., after editing)
+  useEffect(() => {
+    const handleFocus = () => {
+      fetchTrips();
+    };
+    
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchTrips();
+      }
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   const fetchTrips = async () => {
@@ -36,6 +62,15 @@ const Dashboard = () => {
       console.error('Error fetching trips:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAllReviews = async () => {
+    try {
+      const { data } = await reviewAPI.getAllReviews();
+      setAllReviews(data);
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
     }
   };
 
@@ -81,12 +116,33 @@ const Dashboard = () => {
     return defaultImages[index % defaultImages.length];
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0
-    }).format(amount);
+  const formatBudget = (trip) => {
+    // Priority order: customBudget > budget > basePrice
+    let amount = trip.customBudget || trip.budget || trip.basePrice;
+    let currency = trip.preferredCurrency || trip.currency || 'INR';
+    
+    // If we have a budget range, show that instead
+    if (trip.budgetRange && trip.budgetRange !== 'Custom') {
+      return trip.budgetRange;
+    }
+    
+    // If we have an amount, format it with the appropriate currency
+    if (amount) {
+      if (currency === 'INR') {
+        return `₹${amount.toLocaleString('en-IN')}`;
+      } else if (currency === 'USD') {
+        return `$${amount.toLocaleString('en-US')}`;
+      } else if (currency === 'EUR') {
+        return `€${amount.toLocaleString('en-EU')}`;
+      } else if (currency === 'GBP') {
+        return `£${amount.toLocaleString('en-GB')}`;
+      } else {
+        return `${currency} ${amount.toLocaleString()}`;
+      }
+    }
+    
+    // Fallback
+    return 'Budget TBD';
   };
 
   const formatDateRange = (startDate, endDate) => {
@@ -100,6 +156,25 @@ const Dashboard = () => {
       year: 'numeric'
     });
     return `${start} - ${end}`;
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Not specified';
+    return new Date(dateString).toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+
+  const openDetailsModal = (trip) => {
+    // Navigate to dedicated details page instead of modal
+    navigate(`/trip/${trip._id}/details`);
+  };
+
+  const closeDetailsModal = () => {
+    setShowDetailsModal(false);
+    setViewDetailsTrip(null);
   };
 
   return (
@@ -189,6 +264,11 @@ const Dashboard = () => {
                   <div className="action-icon">🌟</div>
                   <h3 className="action-title">Manage Featured</h3>
                   <p className="action-description">Curate and promote the best travel experiences</p>
+                </div>
+                <div className="action-card admin" onClick={() => { fetchAllReviews(); setShowReviewsModal(true); }}>
+                  <div className="action-icon">💬</div>
+                  <h3 className="action-title">Guide Reviews <span className="reviews-count-badge">{allReviews.length}</span></h3>
+                  <p className="action-description">View all user-submitted guide reviews</p>
                 </div>
               </>
             )}
@@ -290,19 +370,20 @@ const Dashboard = () => {
                         </div>
                         <div className="trip-quick-actions">
                           <button 
-                            onClick={() => navigate(`/trip/${trip._id}`)} 
+                            onClick={() => openDetailsModal(trip)} 
                             className="quick-action-btn view-btn"
                             title="View Complete Details"
                           >
                             👁️
                           </button>
                           <button 
-                            onClick={() => navigate(`/admin/trips/${trip._id}/edit`)} 
+                            onClick={() => navigate(`/trip/${trip._id}/edit`)} 
                             className="quick-action-btn edit-btn"
                             title="Edit Trip"
                           >
                             ✏️
                           </button>
+
                         </div>
                       </div>
                     </div>
@@ -313,7 +394,10 @@ const Dashboard = () => {
                       <h3 className="trip-title-new">{trip.title}</h3>
                       <div className="trip-destination-new">
                         <span className="location-icon">📍</span>
-                        {trip.destination}
+                        {trip.destinationCity && trip.destinationCountry 
+                          ? `${trip.destinationCity}, ${trip.destinationCountry}` 
+                          : trip.destination || 'Destination TBD'
+                        }
                       </div>
                     </div>
                     
@@ -342,7 +426,7 @@ const Dashboard = () => {
                         <div className="detail-content">
                           <span className="detail-label">Budget</span>
                           <span className="detail-value">
-                            {formatCurrency(trip.budget || trip.basePrice || 0)}
+                            {formatBudget(trip)}
                           </span>
                         </div>
                       </div>
@@ -351,7 +435,7 @@ const Dashboard = () => {
                     <div className="trip-card-footer">
                       <div className="trip-actions-new">
                         <button 
-                          onClick={() => navigate(`/trip/${trip._id}`)} 
+                          onClick={() => openDetailsModal(trip)} 
                           className="btn-primary-new"
                           title="View complete trip details"
                         >
@@ -384,6 +468,46 @@ const Dashboard = () => {
           )}
         </div>
       </div>
+
+      {showReviewsModal && (
+        <div className="modal-overlay" onClick={() => setShowReviewsModal(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>💬 Guide Reviews ({allReviews.length})</h2>
+              <button className="modal-close" onClick={() => setShowReviewsModal(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              {allReviews.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-state-icon">💬</div>
+                  <h3>No reviews yet</h3>
+                  <p>Reviews submitted by users will appear here</p>
+                </div>
+              ) : (
+                <div className="reviews-admin-list">
+                  {allReviews.map(r => (
+                    <div key={r._id} className="reviews-admin-card">
+                      <div className="reviews-admin-top">
+                        <div className="reviews-admin-avatar">{r.userName.charAt(0).toUpperCase()}</div>
+                        <div className="reviews-admin-meta">
+                          <span className="reviews-admin-name">{r.userName}</span>
+                          <span className="reviews-admin-guide">{r.guideTitle}</span>
+                          <span className="reviews-admin-date">{new Date(r.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                        </div>
+                        <div className="reviews-admin-stars">
+                          {'★'.repeat(r.rating)}<span className="reviews-admin-stars-empty">{'★'.repeat(5 - r.rating)}</span>
+                        </div>
+                      </div>
+                      <p className="reviews-admin-comment">{r.comment}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <Footer />
     </div>
   );

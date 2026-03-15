@@ -178,7 +178,7 @@ const EditTrip = () => {
 
       setSuccessMessage('✅ Trip updated successfully! Admin has been notified of your changes.');
       setTimeout(() => {
-        navigate(`/trip/${id}`);
+        navigate(`/trip/${id}/details`);
       }, 2000);
     } catch (error) {
       console.error('Error updating trip:', error);

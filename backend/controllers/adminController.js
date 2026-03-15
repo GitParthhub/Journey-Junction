@@ -190,7 +190,69 @@ exports.getTripApplicants = async (req, res) => {
   }
 };
 
-// Update applicant status (approve/reject)
+// Confirm trip for a user notification with price
+exports.confirmTripWithPrice = async (req, res) => {
+  try {
+    const { notificationId } = req.params;
+    const { confirmedPrice, currency, message } = req.body;
+
+    if (!confirmedPrice || confirmedPrice <= 0) {
+      return res.status(400).json({ message: 'Valid price is required' });
+    }
+
+    // Find the admin notification
+    const Notification = require('../models/Notification');
+    const notification = await Notification.findById(notificationId);
+    if (!notification) return res.status(404).json({ message: 'Notification not found' });
+
+    // Find the trip
+    const trip = await Trip.findById(notification.trip?.id || notification.trip);
+    if (!trip) return res.status(404).json({ message: 'Trip not found' });
+
+    // Find the user (customer)
+    const customerId = notification.customer?.id || notification.customer;
+    const user = await User.findById(customerId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Mark admin notification as confirmed
+    notification.read = true;
+    notification.readAt = new Date();
+    notification.confirmed = true;
+    notification.confirmedPrice = confirmedPrice;
+    await notification.save();
+
+    // Send payment notification to user
+    const userNotification = {
+      id: `confirm_${notificationId}_${Date.now()}`,
+      type: 'trip_approved',
+      title: '✅ Trip Confirmed! Proceed to Payment',
+      message: message || `Great news! Your trip "${trip.title}" has been confirmed by our team. The total price is ${currency || trip.currency || 'INR'} ${confirmedPrice}. Please proceed to payment to secure your booking.`,
+      tripId: trip._id,
+      isRead: false,
+      actionRequired: true,
+      actionType: 'payment',
+      actionData: {
+        tripTitle: trip.title,
+        destination: trip.destinationCity && trip.destinationCountry
+          ? `${trip.destinationCity}, ${trip.destinationCountry}`
+          : trip.destination || 'TBD',
+        basePrice: confirmedPrice,
+        currency: currency || trip.currency || 'INR',
+        image: trip.mainImage || trip.coverImage || trip.image || '',
+        applicantId: notification.customer?.applicantId || null
+      }
+    };
+
+    user.notifications.push(userNotification);
+    await user.save();
+
+    res.json({ success: true, message: 'Trip confirmed and user notified successfully' });
+  } catch (error) {
+    console.error('Error confirming trip:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
 exports.updateApplicantStatus = async (req, res) => {
   try {
     const { tripId, applicantId } = req.params;

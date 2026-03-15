@@ -10,6 +10,11 @@ const AdminNotifications = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
+  const [confirmModal, setConfirmModal] = useState(null); // { notification }
+  const [confirmPrice, setConfirmPrice] = useState('');
+  const [confirmCurrency, setConfirmCurrency] = useState('INR');
+  const [confirmMessage, setConfirmMessage] = useState('');
+  const [confirmLoading, setConfirmLoading] = useState(false);
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
 
@@ -62,6 +67,38 @@ const AdminNotifications = () => {
       setNotifications(prev => prev.filter(n => n._id !== notificationId));
     } catch (error) {
       console.error('Error deleting notification:', error);
+    }
+  };
+
+  const openConfirmModal = (notification) => {
+    setConfirmModal(notification);
+    setConfirmPrice(notification.trip?.basePrice || '');
+    setConfirmCurrency(notification.trip?.currency || 'INR');
+    setConfirmMessage('');
+  };
+
+  const handleConfirmTrip = async () => {
+    if (!confirmPrice || parseFloat(confirmPrice) <= 0) {
+      alert('Please enter a valid price.');
+      return;
+    }
+    setConfirmLoading(true);
+    try {
+      await adminAPI.confirmTripWithPrice(confirmModal._id, {
+        confirmedPrice: parseFloat(confirmPrice),
+        currency: confirmCurrency,
+        message: confirmMessage
+      });
+      setNotifications(prev =>
+        prev.map(n => n._id === confirmModal._id ? { ...n, read: true, confirmed: true } : n)
+      );
+      setConfirmModal(null);
+      alert('Trip confirmed and user notified successfully!');
+    } catch (error) {
+      console.error('Error confirming trip:', error);
+      alert(error.response?.data?.message || 'Failed to confirm trip.');
+    } finally {
+      setConfirmLoading(false);
     }
   };
 
@@ -242,6 +279,15 @@ const AdminNotifications = () => {
                       ✓
                     </button>
                   )}
+                  {!notification.confirmed && (
+                    <button
+                      onClick={() => openConfirmModal(notification)}
+                      className="action-btn confirm-btn"
+                      title="Confirm trip with price"
+                    >
+                      ✅
+                    </button>
+                  )}
                   <button 
                     onClick={() => deleteNotification(notification._id)}
                     className="action-btn delete-btn"
@@ -255,6 +301,58 @@ const AdminNotifications = () => {
           </div>
         )}
       </div>
+
+      {/* Confirm Trip Modal */}
+      {confirmModal && (
+        <div className="confirm-modal-overlay" onClick={() => setConfirmModal(null)}>
+          <div className="confirm-modal" onClick={e => e.stopPropagation()}>
+            <h2>✅ Confirm Trip & Set Price</h2>
+            <div className="confirm-modal-info">
+              <p><strong>Customer:</strong> {confirmModal.customer?.name} ({confirmModal.customer?.email})</p>
+              <p><strong>Trip:</strong> {confirmModal.trip?.title || confirmModal.title}</p>
+              {confirmModal.trip?.destination && <p><strong>Destination:</strong> {confirmModal.trip.destination}</p>}
+            </div>
+            <div className="confirm-modal-form">
+              <div className="confirm-form-row">
+                <div className="confirm-form-group">
+                  <label>Confirmed Price *</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={confirmPrice}
+                    onChange={e => setConfirmPrice(e.target.value)}
+                    placeholder="Enter trip price"
+                  />
+                </div>
+                <div className="confirm-form-group">
+                  <label>Currency</label>
+                  <select value={confirmCurrency} onChange={e => setConfirmCurrency(e.target.value)}>
+                    <option value="INR">₹ INR</option>
+                    <option value="USD">$ USD</option>
+                    <option value="EUR">€ EUR</option>
+                    <option value="GBP">£ GBP</option>
+                  </select>
+                </div>
+              </div>
+              <div className="confirm-form-group">
+                <label>Message to User (optional)</label>
+                <textarea
+                  value={confirmMessage}
+                  onChange={e => setConfirmMessage(e.target.value)}
+                  placeholder="Add a custom message for the user..."
+                  rows="3"
+                />
+              </div>
+            </div>
+            <div className="confirm-modal-actions">
+              <button className="btn-cancel-confirm" onClick={() => setConfirmModal(null)}>Cancel</button>
+              <button className="btn-submit-confirm" onClick={handleConfirmTrip} disabled={confirmLoading}>
+                {confirmLoading ? 'Confirming...' : '✅ Confirm & Notify User'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

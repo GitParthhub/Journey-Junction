@@ -95,16 +95,28 @@
 }
 
 .price-display {
-  padding: 16px;
+  padding: 16px 24px;
   background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
   border-radius: 12px;
-  display: inline-block;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.price-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .amount {
-  font-size: 28px;
-  font-weight: 700;
+  font-size: 32px;
+  font-weight: 800;
   color: white;
+  letter-spacing: -0.5px;
 }
 
 /* Payment Methods Grid */
@@ -745,6 +757,112 @@
 .error-message p {
   color: var(--gray-600);
   font-size: 16px;
+}
+
+/* Already Paid Popup */
+.already-paid-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 3000;
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.2s ease;
+}
+
+.already-paid-modal {
+  background: white;
+  border-radius: 20px;
+  padding: 48px 40px;
+  max-width: 420px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease;
+}
+
+.already-paid-icon {
+  font-size: 64px;
+  margin-bottom: 20px;
+  animation: bounceIn 0.5s ease;
+}
+
+.already-paid-modal h2 {
+  font-size: 24px;
+  font-weight: 800;
+  color: #00798C;
+  margin-bottom: 12px;
+}
+
+.already-paid-modal p {
+  font-size: 15px;
+  color: #555;
+  margin-bottom: 8px;
+  line-height: 1.6;
+}
+
+.already-paid-sub {
+  font-size: 13px !important;
+  color: #888 !important;
+  margin-bottom: 28px !important;
+}
+
+.already-paid-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.already-paid-dashboard-btn {
+  background: linear-gradient(135deg, #00798C 0%, #30638E 100%);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.already-paid-dashboard-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 121, 140, 0.35);
+}
+
+.already-paid-close-btn {
+  background: #f1f5f9;
+  color: #64748b;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.already-paid-close-btn:hover {
+  background: #e2e8f0;
+  transform: translateY(-2px);
+}
+
+@keyframes bounceIn {
+  0% { transform: scale(0.3); opacity: 0; }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(40px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
 /* Responsive Design */

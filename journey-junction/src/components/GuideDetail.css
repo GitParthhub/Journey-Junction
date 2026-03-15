@@ -1,0 +1,302 @@
+.gd-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 24px 16px;
+  overflow-y: auto;
+  animation: gd-fade-in 0.2s ease;
+}
+
+@keyframes gd-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes gd-slide-up { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.gd-modal {
+  background: white;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 760px;
+  overflow: hidden;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+  animation: gd-slide-up 0.3s ease;
+  margin: auto;
+}
+
+/* Header */
+.gd-header {
+  position: relative;
+  height: 280px;
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: flex-end;
+}
+
+.gd-header-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.3) 60%, transparent 100%);
+}
+
+.gd-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: rgba(0,0,0,0.5);
+  color: white;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 16px;
+  cursor: pointer;
+  z-index: 2;
+  transition: background 0.2s;
+}
+.gd-close:hover { background: rgba(0,0,0,0.8); }
+
+.gd-header-content {
+  position: relative;
+  z-index: 1;
+  padding: 24px;
+  width: 100%;
+}
+
+.gd-category-badge {
+  background: linear-gradient(135deg, #00798C, #30638E);
+  color: white;
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-block;
+  margin-bottom: 10px;
+}
+
+.gd-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: white;
+  margin-bottom: 10px;
+  line-height: 1.3;
+}
+
+.gd-meta {
+  display: flex;
+  gap: 16px;
+  color: rgba(255,255,255,0.85);
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+.gd-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.gd-tag {
+  background: rgba(237,174,73,0.25);
+  color: #EDAE49;
+  border: 1px solid rgba(237,174,73,0.5);
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* Body */
+.gd-body { padding: 28px 32px; }
+
+.gd-intro {
+  font-size: 16px;
+  color: #444;
+  line-height: 1.75;
+  margin-bottom: 28px;
+  padding-bottom: 24px;
+  border-bottom: 2px solid #f0f4f8;
+}
+
+/* Sections */
+.gd-section {
+  margin-bottom: 24px;
+  padding: 20px;
+  background: #f8fafb;
+  border-radius: 12px;
+  border-left: 4px solid #00798C;
+}
+
+.gd-section-heading {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin-bottom: 10px;
+}
+
+.gd-section-body {
+  font-size: 14px;
+  color: #555;
+  line-height: 1.7;
+  margin: 0;
+}
+
+/* Review Form */
+.gd-review-form-wrap {
+  margin-top: 32px;
+  padding: 24px;
+  background: linear-gradient(135deg, #f0f9fa, #e8f4f8);
+  border-radius: 16px;
+  border: 1px solid #b2e4ec;
+}
+
+.gd-reviews-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.gd-reviews-count {
+  background: linear-gradient(135deg, #00798C, #30638E);
+  color: white;
+  font-size: 12px;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.gd-rating-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.gd-rating-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #444;
+}
+
+.gd-stars { display: flex; gap: 4px; }
+
+.gd-star {
+  font-size: 28px;
+  color: #ddd;
+  cursor: pointer;
+  transition: color 0.15s, transform 0.15s;
+  line-height: 1;
+}
+
+.gd-star.filled { color: #EDAE49; }
+.gd-star:not(.readonly):hover { transform: scale(1.2); }
+.gd-star.readonly { cursor: default; font-size: 16px; }
+
+.gd-comment-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 2px solid #d0e8ec;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #333;
+  resize: vertical;
+  font-family: inherit;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+.gd-comment-input:focus { outline: none; border-color: #00798C; }
+
+.gd-form-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.gd-submit-msg { font-size: 13px; font-weight: 600; }
+.gd-submit-msg.success { color: #16a34a; }
+.gd-submit-msg.error { color: #dc2626; }
+
+.gd-submit-btn {
+  background: linear-gradient(135deg, #00798C, #30638E);
+  color: white;
+  border: none;
+  padding: 11px 24px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.25s;
+  border: 2px solid #EDAE49;
+}
+.gd-submit-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,121,140,0.3); }
+.gd-submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Reviews List */
+.gd-reviews-section { margin-top: 32px; }
+
+.gd-reviews-loading, .gd-no-reviews {
+  text-align: center;
+  padding: 32px;
+  color: #888;
+  font-size: 14px;
+}
+
+.gd-no-reviews span { font-size: 32px; display: block; margin-bottom: 8px; }
+
+.gd-reviews-list { display: flex; flex-direction: column; gap: 14px; }
+
+.gd-review-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.gd-review-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.gd-reviewer-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #00798C, #30638E);
+  color: white;
+  font-weight: 700;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.gd-reviewer-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.gd-reviewer-name { font-size: 14px; font-weight: 700; color: #1a1a2e; }
+.gd-review-date { font-size: 12px; color: #888; }
+
+.gd-review-comment {
+  font-size: 14px;
+  color: #555;
+  line-height: 1.6;
+  margin: 0;
+}
+
+@media (max-width: 600px) {
+  .gd-body { padding: 20px 16px; }
+  .gd-title { font-size: 18px; }
+  .gd-header { height: 220px; }
+}

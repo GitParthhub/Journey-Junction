@@ -29,7 +29,8 @@ export const tripAPI = {
   getTripById: (id) => API.get(`/trips/${id}`),
   updateTrip: (id, data) => API.put(`/trips/${id}`, data),
   deleteTrip: (id) => API.delete(`/trips/${id}`),
-  applyForTrip: (id, applicationData) => API.post(`/trips/${id}/apply`, applicationData)
+  applyForTrip: (id, applicationData) => API.post(`/trips/${id}/apply`, applicationData),
+  refreshTripPhotos: (id) => API.post(`/trips/${id}/refresh-photos`)
 };
 
 export const adminAPI = {
@@ -51,7 +52,8 @@ export const adminAPI = {
   getNotificationStats: () => API.get('/admin/notifications/stats'),
   markNotificationRead: (id) => API.patch(`/admin/notifications/${id}/read`),
   markAllNotificationsRead: () => API.patch('/admin/notifications/read-all'),
-  deleteNotification: (id) => API.delete(`/admin/notifications/${id}`)
+  deleteNotification: (id) => API.delete(`/admin/notifications/${id}`),
+  confirmTripWithPrice: (notificationId, data) => API.patch(`/admin/notifications/${notificationId}/confirm`, data)
 };
 
 export const paymentAPI = {
@@ -59,4 +61,14 @@ export const paymentAPI = {
   getPaymentHistory: () => API.get('/payment/history'),
   getAdminNotifications: () => API.get('/payment/admin/notifications'),
   markAdminNotificationRead: (notificationId) => API.patch(`/payment/admin/notifications/${notificationId}/read`)
+};
+
+export const contactAPI = {
+  sendMessage: (data) => API.post('/notifications', data)
+};
+
+export const reviewAPI = {
+  submitReview: (data) => API.post('/reviews', data),
+  getReviews: (guideId) => API.get(`/reviews/${guideId}`),
+  getAllReviews: () => API.get('/admin/reviews')
 };

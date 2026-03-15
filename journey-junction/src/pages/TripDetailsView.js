@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { adminAPI, tripAPI } from '../services/api';
+import { tripAPI, adminAPI } from '../services/api';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import './TripDetails.css';
+import './TripDetailsView.css';
 
-const TripDetails = () => {
+const TripDetailsView = () => {
   const [trip, setTrip] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -22,15 +22,10 @@ const TripDetails = () => {
       setError('');
       let response;
       
-      // Try admin API first (for admin users or featured trips)
       try {
         response = await adminAPI.getTripById(id);
-        console.log('Trip data fetched via admin API:', response.data);
       } catch (adminError) {
-        console.log('Admin API failed, trying regular trip API:', adminError.message);
-        // Fallback to regular trip API
         response = await tripAPI.getTripById(id);
-        console.log('Trip data fetched via trip API:', response.data);
       }
       
       if (response && response.data) {
@@ -55,22 +50,18 @@ const TripDetails = () => {
     });
   };
 
-  const formatDateRange = (startDate, endDate) => {
-    const start = new Date(startDate).toLocaleDateString('en-GB', {
-      month: 'short',
-      day: 'numeric'
-    });
-    const end = new Date(endDate).toLocaleDateString('en-GB', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
-    return `${start} - ${end}`;
+  const formatCurrency = (amount, currency = 'USD') => {
+    if (!amount) return 'Not specified';
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency,
+      minimumFractionDigits: 0
+    }).format(amount);
   };
 
   if (loading) {
     return (
-      <div className="trip-details">
+      <div className="trip-details-view">
         <Navbar />
         <div className="loading-container">
           <div className="loading-spinner"></div>
@@ -82,7 +73,7 @@ const TripDetails = () => {
 
   if (error || !trip) {
     return (
-      <div className="trip-details">
+      <div className="trip-details-view">
         <Navbar />
         <div className="error-container">
           <h2>Trip Not Found</h2>
@@ -96,39 +87,47 @@ const TripDetails = () => {
   }
 
   return (
-    <div className="trip-details">
+    <div className="trip-details-view">
       <Navbar />
       
       <div className="trip-details-container">
-        {/* Header Section */}
-        <div className="trip-header">
-          <div className="trip-header-content">
-            <div className="trip-badges">
+        {/* Hero Header */}
+        <div className="trip-hero">
+          <div className="trip-hero-overlay"></div>
+          <div className="trip-hero-content">
+            <div className="trip-badges-header">
               {trip.tripType && <span className="badge trip-type">{trip.tripType}</span>}
-              <span className={`badge status ${trip.status?.toLowerCase()}`}>
+              <span className={`badge status ${trip.status?.toLowerCase() || 'planned'}`}>
                 {trip.status || 'Planned'}
               </span>
               {trip.isFeatured && <span className="badge featured">⭐ Featured</span>}
             </div>
             
-            <h1 className="trip-title">{trip.title}</h1>
-            <div className="trip-subtitle">
-              <span className="trip-destination">📍 {trip.destinationCity && trip.destinationCountry ? `${trip.destinationCity}, ${trip.destinationCountry}` : trip.destination || 'Destination TBD'}</span>
+            <h1 className="trip-main-title">{trip.title}</h1>
+            <div className="trip-main-destination">
+              <span className="location-icon">📍</span>
+              {trip.destinationCity && trip.destinationCountry 
+                ? `${trip.destinationCity}, ${trip.destinationCountry}` 
+                : trip.destination || 'Destination TBD'}
             </div>
           </div>
           
-          <div className="trip-actions">
-            <button onClick={() => navigate(-1)} className="btn-back">
+          <div className="trip-hero-actions">
+            <button onClick={() => navigate(`/admin/trips/${id}/edit`)} className="btn-edit-hero">
+              ✏️ Edit Trip
+            </button>
+            <button onClick={() => navigate(-1)} className="btn-back-hero">
               ← Back
             </button>
           </div>
         </div>
 
-        <div className="trip-content">
+        <div className="trip-content-wrapper">
           
-          {/* 1. BASIC TRIP INFORMATION */}
+          {/* 1. Basic Trip Information */}
           <div className="content-section">
-            <h2>1️⃣ Basic Trip Information</h2>
+            <div className="section-icon">1️⃣</div>
+            <h2 className="section-title">Basic Trip Information</h2>
             <div className="info-grid">
               {trip.title && (
                 <div className="info-card">
@@ -146,6 +145,12 @@ const TripDetails = () => {
                 <div className="info-card">
                   <span className="info-label">Destination City</span>
                   <span className="info-value">{trip.destinationCity}</span>
+                </div>
+              )}
+              {trip.destination && (
+                <div className="info-card">
+                  <span className="info-label">Destination</span>
+                  <span className="info-value">{trip.destination}</span>
                 </div>
               )}
               {trip.tripType && (
@@ -169,7 +174,7 @@ const TripDetails = () => {
               {trip.startDate && trip.endDate && (
                 <div className="info-card">
                   <span className="info-label">Travel Dates</span>
-                  <span className="info-value">{formatDateRange(trip.startDate, trip.endDate)}</span>
+                  <span className="info-value">{formatDate(trip.startDate)} - {formatDate(trip.endDate)}</span>
                 </div>
               )}
               {trip.flexibleDates && (
@@ -181,10 +186,11 @@ const TripDetails = () => {
             </div>
           </div>
 
-          {/* 2. TRAVELER DETAILS */}
-          {trip.fullName && (
+          {/* 2. Traveler Details */}
+          {(trip.fullName || trip.email || trip.mobileNumber) && (
             <div className="content-section">
-              <h2>2️⃣ Traveler Details</h2>
+              <div className="section-icon">2️⃣</div>
+              <h2 className="section-title">Traveler Details</h2>
               <div className="info-grid">
                 {trip.fullName && (
                   <div className="info-card">
@@ -238,10 +244,11 @@ const TripDetails = () => {
             </div>
           )}
 
-          {/* 3. BUDGET PREFERENCES */}
-          {trip.budgetRange && (
+          {/* 3. Budget Preferences */}
+          {(trip.budgetRange || trip.budget || trip.basePrice) && (
             <div className="content-section">
-              <h2>3️⃣ Budget Preferences</h2>
+              <div className="section-icon">3️⃣</div>
+              <h2 className="section-title">Budget Preferences</h2>
               <div className="info-grid">
                 {trip.budgetRange && (
                   <div className="info-card highlight">
@@ -253,6 +260,18 @@ const TripDetails = () => {
                   <div className="info-card highlight">
                     <span className="info-label">Custom Budget</span>
                     <span className="info-value">₹{trip.customBudget}</span>
+                  </div>
+                )}
+                {trip.budget && (
+                  <div className="info-card highlight">
+                    <span className="info-label">Budget</span>
+                    <span className="info-value">{formatCurrency(trip.budget, trip.currency)}</span>
+                  </div>
+                )}
+                {trip.basePrice && (
+                  <div className="info-card highlight">
+                    <span className="info-label">Base Price</span>
+                    <span className="info-value">{formatCurrency(trip.basePrice, trip.currency)}</span>
                   </div>
                 )}
                 {trip.preferredCurrency && (
@@ -271,10 +290,11 @@ const TripDetails = () => {
             </div>
           )}
 
-          {/* 4. ACCOMMODATION PREFERENCES */}
+          {/* 4. Accommodation Preferences */}
           {(trip.hotelCategory || trip.roomType || trip.mealPlan) && (
             <div className="content-section">
-              <h2>4️⃣ Accommodation Preferences</h2>
+              <div className="section-icon">4️⃣</div>
+              <h2 className="section-title">Accommodation Preferences</h2>
               <div className="info-grid">
                 {trip.hotelCategory && (
                   <div className="info-card">
@@ -304,10 +324,11 @@ const TripDetails = () => {
             </div>
           )}
 
-          {/* 5. TRANSPORTATION PREFERENCES */}
+          {/* 5. Transportation Preferences */}
           {(trip.internationalFlightRequired || trip.localTransportType) && (
             <div className="content-section">
-              <h2>5️⃣ Transportation Preferences</h2>
+              <div className="section-icon">5️⃣</div>
+              <h2 className="section-title">Transportation Preferences</h2>
               <div className="info-grid">
                 {trip.internationalFlightRequired && (
                   <div className="info-card">
@@ -337,15 +358,16 @@ const TripDetails = () => {
             </div>
           )}
 
-          {/* 6. ACTIVITIES & EXPERIENCES */}
-          {(trip.selectedActivities?.length > 0 || trip.specialActivitiesRequested) && (
+          {/* 6. Activities & Experiences */}
+          {(trip.selectedActivities?.length > 0 || trip.activities?.length > 0 || trip.specialActivitiesRequested) && (
             <div className="content-section">
-              <h2>6️⃣ Activities & Experiences</h2>
-              {trip.selectedActivities && trip.selectedActivities.length > 0 && (
+              <div className="section-icon">6️⃣</div>
+              <h2 className="section-title">Activities & Experiences</h2>
+              {(trip.selectedActivities?.length > 0 || trip.activities?.length > 0) && (
                 <div className="activities-section">
                   <h3>Selected Activities</h3>
                   <div className="tags-container">
-                    {trip.selectedActivities.map((activity, idx) => (
+                    {(trip.selectedActivities || trip.activities || []).map((activity, idx) => (
                       <span key={idx} className="activity-tag">{activity}</span>
                     ))}
                   </div>
@@ -360,10 +382,11 @@ const TripDetails = () => {
             </div>
           )}
 
-          {/* 7. ITINERARY PREFERENCES */}
+          {/* 7. Itinerary Preferences */}
           {(trip.numberOfDestinations || trip.mustVisitPlaces || trip.dailyActivityLevel) && (
             <div className="content-section">
-              <h2>7️⃣ Itinerary Preferences</h2>
+              <div className="section-icon">7️⃣</div>
+              <h2 className="section-title">Itinerary Preferences</h2>
               <div className="info-grid">
                 {trip.numberOfDestinations && (
                   <div className="info-card">
@@ -387,10 +410,11 @@ const TripDetails = () => {
             </div>
           )}
 
-          {/* 8. SPECIAL REQUESTS */}
-          {(trip.dietaryRequirements || trip.accessibilityNeeds || trip.celebrationType || trip.specialNotes) && (
+          {/* 8. Special Requests */}
+          {(trip.dietaryRequirements || trip.accessibilityNeeds || trip.celebrationType || trip.specialNotes || trip.description) && (
             <div className="content-section">
-              <h2>8️⃣ Special Requests</h2>
+              <div className="section-icon">8️⃣</div>
+              <h2 className="section-title">Special Requests</h2>
               <div className="info-grid">
                 {trip.dietaryRequirements && (
                   <div className="info-card">
@@ -417,13 +441,20 @@ const TripDetails = () => {
                   <p>{trip.specialNotes}</p>
                 </div>
               )}
+              {trip.description && (
+                <div className="text-section">
+                  <h3>Description</h3>
+                  <p>{trip.description}</p>
+                </div>
+              )}
             </div>
           )}
 
-          {/* 9. DOCUMENT UPLOAD */}
+          {/* 9. Document Upload */}
           {(trip.passportCopy || trip.idProof || trip.visaDocument) && (
             <div className="content-section">
-              <h2>9️⃣ Document Upload</h2>
+              <div className="section-icon">9️⃣</div>
+              <h2 className="section-title">Document Upload</h2>
               <div className="documents-grid">
                 {trip.passportCopy && (
                   <div className="document-card">
@@ -450,10 +481,11 @@ const TripDetails = () => {
             </div>
           )}
 
-          {/* 10. PAYMENT INFORMATION */}
+          {/* 10. Payment Information */}
           {(trip.paymentMethod || trip.advancePaymentAmount || trip.billingAddress) && (
             <div className="content-section">
-              <h2>🔟 Payment Information</h2>
+              <div className="section-icon">🔟</div>
+              <h2 className="section-title">Payment Information</h2>
               <div className="info-grid">
                 {trip.paymentMethod && (
                   <div className="info-card">
@@ -510,4 +542,4 @@ const TripDetails = () => {
   );
 };
 
-export default TripDetails;
+export default TripDetailsView;

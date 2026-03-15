@@ -1,5 +1,6 @@
 const Trip = require('../models/Trip');
 const User = require('../models/User');
+const Notification = require('../models/Notification');
 
 // Process payment for approved trip
 exports.processPayment = async (req, res) => {
@@ -79,7 +80,16 @@ exports.processPayment = async (req, res) => {
         if (anyApplicant.status === 'rejected') {
           return res.status(400).json({ message: 'Application was rejected' });
         } else if (anyApplicant.status === 'paid') {
-          return res.status(400).json({ message: 'Payment already completed for this trip' });
+          const user = await User.findById(userId);
+          if (user) {
+            await sendAdminNotification({
+              type: 'payment_completed',
+              user: { id: userId, name: user.name, email: user.email },
+              trip: { id: trip._id, title: trip.title, destination: trip.destination, startDate: anyApplicant.preferredStartDate, endDate: anyApplicant.preferredEndDate },
+              payment: { method: paymentMethod, transactionId: anyApplicant.paymentDetails?.transactionId || `DUP_${Date.now()}`, amount: trip.customBudget || trip.budget || trip.basePrice || 0, currency: trip.currency || 'INR', paidAt: anyApplicant.paymentDetails?.paidAt || new Date() }
+            });
+          }
+          return res.json({ success: true, alreadyPaid: true, message: 'Payment already completed', transactionId: anyApplicant.paymentDetails?.transactionId });
         }
       } else {
         // No application found at all - create one for demo purposes
@@ -111,7 +121,16 @@ exports.processPayment = async (req, res) => {
     });
 
     if (applicant.status === 'paid') {
-      return res.status(400).json({ message: 'Payment already completed for this trip' });
+      const user = await User.findById(userId);
+      if (user) {
+        await sendAdminNotification({
+          type: 'payment_completed',
+          user: { id: userId, name: user.name, email: user.email },
+          trip: { id: trip._id, title: trip.title, destination: trip.destination, startDate: applicant.preferredStartDate, endDate: applicant.preferredEndDate },
+          payment: { method: paymentMethod, transactionId: applicant.paymentDetails?.transactionId || `DUP_${Date.now()}`, amount: trip.customBudget || trip.budget || trip.basePrice || 0, currency: trip.currency || 'INR', paidAt: applicant.paymentDetails?.paidAt || new Date() }
+        });
+      }
+      return res.json({ success: true, alreadyPaid: true, message: 'Payment already completed', transactionId: applicant.paymentDetails?.transactionId });
     }
 
     // Simulate payment processing (in real app, integrate with Stripe/PayPal)
@@ -133,31 +152,25 @@ exports.processPayment = async (req, res) => {
 
       // Get user details for admin notification
       const user = await User.findById(userId);
-      
-      // Send admin notification about payment completion
-      await sendAdminNotification({
-        type: 'payment_completed',
-        user: {
-          id: userId,
-          name: user.name,
-          email: user.email
-        },
-        trip: {
-          id: trip._id,
-          title: trip.title,
-          destination: trip.destination,
-          startDate: applicant.preferredStartDate,
-          endDate: applicant.preferredEndDate,
-          image: trip.image
-        },
-        payment: {
-          method: paymentMethod,
+
+      // For office visits, send a detailed meeting notification to admin
+      if (paymentMethod === 'office' && paymentDetails) {
+        await sendOfficeVisitNotification({
+          user: { id: userId, name: user.name, email: user.email },
+          trip: { id: trip._id, title: trip.title, destination: trip.destination },
+          visitDetails: paymentDetails,
           transactionId: paymentResult.transactionId,
-          amount: trip.basePrice,
-          currency: trip.currency || 'USD',
-          paidAt: new Date()
-        }
-      });
+          amount: trip.customBudget || trip.budget || trip.basePrice || 0,
+          currency: trip.currency || 'INR'
+        });
+      } else {
+        await sendAdminNotification({
+          type: 'payment_completed',
+          user: { id: userId, name: user.name, email: user.email },
+          trip: { id: trip._id, title: trip.title, destination: trip.destination, startDate: applicant.preferredStartDate, endDate: applicant.preferredEndDate, image: trip.image },
+          payment: { method: paymentMethod, transactionId: paymentResult.transactionId, amount: trip.customBudget || trip.budget || trip.basePrice || 0, currency: trip.currency || 'INR', paidAt: new Date() }
+        });
+      }
 
       // Send confirmation notification to user
       if (user) {
@@ -234,37 +247,82 @@ const sendAdminNotification = async (data) => {
     // For demo purposes, we'll use a global variable or file system
     
     // Create notification object for admin
-    const adminNotification = {
-      id: `admin_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      type: 'payment_completed',
-      timestamp: new Date().toISOString(),
-      read: false,
-      user: data.user,
-      trip: data.trip,
-      payment: data.payment
-    };
-    
-    // In a real app, you would:
-    // 1. Store in database
-    // 2. Send via WebSocket to admin dashboard
-    // 3. Send email notification
-    // 4. Send SMS/WhatsApp notification
-    // 5. Update admin dashboard in real-time
-    
-    // For demo, we'll simulate storing in a global admin notifications array
-    global.adminNotifications = global.adminNotifications || [];
-    global.adminNotifications.unshift(adminNotification);
-    
-    // Keep only last 100 notifications
-    if (global.adminNotifications.length > 100) {
-      global.adminNotifications = global.adminNotifications.slice(0, 100);
-    }
-    
-    console.log('Admin notification stored:', adminNotification.id);
+    const adminNotification = new Notification({
+      type: 'payment',
+      priority: 'high',
+      title: `Payment Confirmed: ${data.trip.title}`,
+      message: `${data.user.name} (${data.user.email}) has completed payment of ${data.payment.currency} ${data.payment.amount} for "${data.trip.title}" via ${data.payment.method.toUpperCase()}. Transaction ID: ${data.payment.transactionId}`,
+      customer: {
+        id: data.user.id,
+        name: data.user.name,
+        email: data.user.email
+      },
+      trip: {
+        id: data.trip.id,
+        title: data.trip.title,
+        destination: data.trip.destination,
+        startDate: data.trip.startDate,
+        endDate: data.trip.endDate
+      }
+    });
+
+    await adminNotification.save();
+    console.log('Admin notification saved to DB:', adminNotification._id);
     
     return { success: true };
   } catch (error) {
     console.error('Error sending admin notification:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Send detailed office visit notification to admin
+const sendOfficeVisitNotification = async ({ user, trip, visitDetails, transactionId, amount, currency }) => {
+  try {
+    const visitDate = visitDetails.preferredDate
+      ? new Date(visitDetails.preferredDate).toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+      : 'Not specified';
+    const visitTime = visitDetails.preferredTime || 'Not specified';
+
+    const adminNotification = new Notification({
+      type: 'booking',
+      priority: 'urgent',
+      title: `🏢 Office Visit Scheduled — ${trip.title}`,
+      message:
+        `Customer ${visitDetails.fullName || user.name} has scheduled an office visit to pay for "${trip.title}".
+` +
+        `📅 Visit Date: ${visitDate} at ${visitTime}
+` +
+        `👤 Name: ${visitDetails.fullName || user.name}
+` +
+        `📞 Phone: ${visitDetails.phoneNumber || 'N/A'}
+` +
+        `✉️ Email: ${visitDetails.email || user.email}
+` +
+        `💰 Amount Due: ${currency} ${amount}
+` +
+        `📝 Notes: ${visitDetails.notes || 'None'}
+` +
+        `🔖 Ref ID: ${transactionId}`,
+      customer: {
+        id: user.id,
+        name: visitDetails.fullName || user.name,
+        email: visitDetails.email || user.email,
+        phone: visitDetails.phoneNumber || ''
+      },
+      trip: {
+        id: trip.id,
+        title: trip.title,
+        destination: trip.destination,
+        startDate: visitDetails.preferredDate ? new Date(visitDetails.preferredDate) : null
+      }
+    });
+
+    await adminNotification.save();
+    console.log('Office visit notification saved to DB:', adminNotification._id);
+    return { success: true };
+  } catch (error) {
+    console.error('Error saving office visit notification:', error);
     return { success: false, error: error.message };
   }
 };

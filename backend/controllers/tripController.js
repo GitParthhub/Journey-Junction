@@ -1,16 +1,37 @@
 const Trip = require('../models/Trip');
 const Notification = require('../models/Notification');
 const User = require('../models/User');
+const photoService = require('../services/photoService');
 
 exports.createTrip = async (req, res) => {
   try {
     console.log('Creating trip with data:', req.body);
     
-    // Create trip with user ID
+    // Determine destination for photo search
+    const destination = req.body.destinationCity || req.body.destination || 'travel';
+    console.log('Fetching photos for destination:', destination);
+    
+    // Fetch destination photos automatically
+    let destinationPhotos = [];
+    let mainImage = null;
+    
+    try {
+      destinationPhotos = await photoService.getDestinationPhotos(destination, 3);
+      mainImage = photoService.getBestPhoto(destinationPhotos)?.url;
+      console.log('Photos fetched successfully:', destinationPhotos.length);
+    } catch (photoError) {
+      console.error('Error fetching photos:', photoError);
+      // Continue with trip creation even if photo fetch fails
+    }
+    
+    // Create trip with user ID and photos
     const trip = new Trip({ 
       ...req.body, 
       userId: req.user.id,
-      status: 'planned' // Set default status for user trips
+      status: 'planned', // Set default status for user trips
+      images: destinationPhotos.map(photo => photo.url), // Store all photo URLs
+      mainImage: mainImage, // Store the best photo as main image
+      bestPhotoIndex: 0 // First photo is the best
     });
     
     await trip.save();
@@ -173,5 +194,42 @@ exports.applyForTrip = async (req, res) => {
     res.json({ message: 'Application submitted successfully', trip: updatedTrip });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Refresh photos for a trip
+exports.refreshTripPhotos = async (req, res) => {
+  try {
+    const trip = await Trip.findById(req.params.id);
+    if (!trip) return res.status(404).json({ message: 'Trip not found' });
+    
+    // Check authorization
+    if (trip.userId.toString() !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+
+    // Determine destination for photo search
+    const destination = trip.destinationCity || trip.destination || trip.title;
+    console.log('Refreshing photos for destination:', destination);
+    
+    // Fetch new destination photos
+    const destinationPhotos = await photoService.getDestinationPhotos(destination, 3);
+    const mainImage = photoService.getBestPhoto(destinationPhotos)?.url;
+    
+    // Update trip with new photos
+    trip.images = destinationPhotos.map(photo => photo.url);
+    trip.mainImage = mainImage;
+    trip.bestPhotoIndex = 0;
+    
+    await trip.save();
+    
+    res.json({ 
+      message: 'Photos refreshed successfully', 
+      trip,
+      photosCount: destinationPhotos.length 
+    });
+  } catch (error) {
+    console.error('Error refreshing photos:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 };

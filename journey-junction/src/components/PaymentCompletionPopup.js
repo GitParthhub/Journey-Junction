@@ -253,7 +253,7 @@ const PaymentCompletionPopup = ({
           <button className="btn-view-bill" onClick={onViewBill}>
             📄 View Invoice
           </button>
-          <button className="btn-close-popup" onClick={onClose}>
+<button className="btn-close-popup" onClick={onClose}>
             ✨ Continue to Dashboard
           </button>
         </div>

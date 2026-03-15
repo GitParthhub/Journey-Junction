@@ -48,59 +48,31 @@ const Footer = () => {
               <li><Link to="/featured">Featured Trips</Link></li>
               <li><Link to="/plan-trip">Plan Your Trip</Link></li>
               <li><Link to="/dashboard">My Dashboard</Link></li>
-              <li><a href="#">Travel Guides</a></li>
-              <li><a href="#">Destinations</a></li>
+              <li><Link to="/travel-guides">Travel Guides</Link></li>
+              <li><Link to="/destinations">Destinations</Link></li>
             </ul>
           </div>
 
           <div className="footer-section">
             <h3 className="footer-title">🤝 Support</h3>
             <ul className="footer-links">
-              <li><a href="#">Help Center</a></li>
-              <li><a href="#">Contact Us</a></li>
-              <li><a href="#">Travel Insurance</a></li>
-              <li><a href="#">Safety Guidelines</a></li>
-              <li><a href="#">FAQs</a></li>
+              <li><Link to="/help-center">Help Center</Link></li>
+              <li><Link to="/contact-us">Contact Us</Link></li>
+              <li><Link to="/travel-insurance">Travel Insurance</Link></li>
+              <li><Link to="/safety-guidelines">Safety Guidelines</Link></li>
+              <li><Link to="/faqs">FAQs</Link></li>
             </ul>
           </div>
 
           <div className="footer-section">
             <h3 className="footer-title">🏢 Company</h3>
             <ul className="footer-links">
-              <li><a href="#">About Us</a></li>
-              <li><a href="#">Careers</a></li>
-              <li><a href="#">Press</a></li>
-              <li><a href="#">Blog</a></li>
-              <li><a href="#">Partners</a></li>
+              <li><Link to="/about-us">About Us</Link></li>
+              <li><Link to="/careers">Careers</Link></li>
+              <li><Link to="/press">Press</Link></li>
+              <li><Link to="/blog">Blog</Link></li>
+              <li><Link to="/partners">Partners</Link></li>
             </ul>
-          </div>
-
-          <div className="footer-section footer-newsletter">
-            <h3 className="footer-title">📧 Stay Updated</h3>
-            <p className="newsletter-description">
-              Get the latest travel deals, destination guides, and exclusive offers delivered to your inbox.
-            </p>
-            <div className="newsletter-form">
-              <input 
-                type="email" 
-                placeholder="Enter your email" 
-                className="newsletter-input"
-              />
-              <button className="newsletter-btn">
-                <span className="newsletter-icon">🚀</span>
-                Subscribe
-              </button>
-            </div>
-            <div className="footer-contact">
-              <div className="contact-item">
-                <span className="contact-icon">📞</span>
-                <span>+1 (555) 123-4567</span>
-              </div>
-              <div className="contact-item">
-                <span className="contact-icon">📧</span>
-                <span>hello@journeyjunction.com</span>
-              </div>
-            </div>
           </div>
         </div>
 

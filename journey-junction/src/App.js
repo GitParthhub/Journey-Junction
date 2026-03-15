@@ -11,9 +11,22 @@ import AdminPanel from './pages/AdminPanel';
 import AdminTripForm from './pages/AdminTripForm';
 import AdminNotifications from './pages/AdminNotifications';
 import TripDetails from './pages/TripDetails';
+import TripDetailsView from './pages/TripDetailsView';
 import Notifications from './pages/Notifications';
 import PaymentMethods from './pages/PaymentMethods';
 import Settings from './pages/Settings';
+import TravelGuides from './pages/TravelGuides';
+import Destinations from './pages/Destinations';
+import HelpCenter from './pages/HelpCenter';
+import ContactUs from './pages/ContactUs';
+import TravelInsurance from './pages/TravelInsurance';
+import SafetyGuidelines from './pages/SafetyGuidelines';
+import FAQs from './pages/FAQs';
+import AboutUs from './pages/AboutUs';
+import Careers from './pages/Careers';
+import Press from './pages/Press';
+import Blog from './pages/Blog';
+import Partners from './pages/Partners';
 import './App.css';
 
 function App() {
@@ -34,11 +47,24 @@ function App() {
           <Route path="/notifications" element={<PrivateRoute><Notifications /></PrivateRoute>} />
           <Route path="/payment-methods" element={<PrivateRoute><PaymentMethods /></PrivateRoute>} />
           <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
+          <Route path="/travel-guides" element={<PrivateRoute><TravelGuides /></PrivateRoute>} />
+          <Route path="/destinations" element={<PrivateRoute><Destinations /></PrivateRoute>} />
+          <Route path="/help-center" element={<PrivateRoute><HelpCenter /></PrivateRoute>} />
+          <Route path="/contact-us" element={<PrivateRoute><ContactUs /></PrivateRoute>} />
+          <Route path="/travel-insurance" element={<PrivateRoute><TravelInsurance /></PrivateRoute>} />
+          <Route path="/safety-guidelines" element={<PrivateRoute><SafetyGuidelines /></PrivateRoute>} />
+          <Route path="/faqs" element={<PrivateRoute><FAQs /></PrivateRoute>} />
+          <Route path="/about-us" element={<PrivateRoute><AboutUs /></PrivateRoute>} />
+          <Route path="/careers" element={<PrivateRoute><Careers /></PrivateRoute>} />
+          <Route path="/press" element={<PrivateRoute><Press /></PrivateRoute>} />
+          <Route path="/blog" element={<PrivateRoute><Blog /></PrivateRoute>} />
+          <Route path="/partners" element={<PrivateRoute><Partners /></PrivateRoute>} />
           <Route path="/admin" element={<PrivateRoute adminOnly><AdminPanel /></PrivateRoute>} />
           <Route path="/admin/notifications" element={<PrivateRoute adminOnly><AdminNotifications /></PrivateRoute>} />
           <Route path="/admin/trips/new" element={<PrivateRoute adminOnly><AdminTripForm /></PrivateRoute>} />
           <Route path="/admin/trips/:id/edit" element={<PrivateRoute adminOnly><AdminTripForm /></PrivateRoute>} />
           <Route path="/trip/:id" element={<PrivateRoute><TripDetails /></PrivateRoute>} />
+          <Route path="/trip/:id/details" element={<PrivateRoute><TripDetailsView /></PrivateRoute>} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </Router>

@@ -1,7 +1,8 @@
 .admin-trip-form {
   min-height: 100vh;
-  background: linear-gradient(135deg, #003D5B 0%, #30638E 50%, #00798C 100%);
+  background: linear-gradient(135deg, #003D5B 0%, #00798C 50%, #30638E 100%);
   position: relative;
+  overflow-x: hidden;
 }
 
 .admin-trip-form::before {
@@ -12,9 +13,16 @@
   right: 0;
   bottom: 0;
   background: 
-    radial-gradient(circle at 20% 20%, rgba(237, 174, 73, 0.1) 0%, transparent 50%),
-    radial-gradient(circle at 80% 80%, rgba(209, 73, 91, 0.08) 0%, transparent 50%);
+    radial-gradient(circle at 20% 20%, rgba(237, 174, 73, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(209, 73, 91, 0.12) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(0, 121, 140, 0.1) 0%, transparent 70%);
   z-index: 1;
+  animation: gradientShift 15s ease infinite;
+}
+
+@keyframes gradientShift {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
 }
 
 .form-container {
@@ -86,14 +94,31 @@
 }
 
 .form-section h2 {
-  font-size: 1.5rem;
+  font-size: 1.6rem;
   font-weight: 700;
   color: #003D5B;
   margin-bottom: 1.5rem;
   padding-bottom: 0.75rem;
-  border-bottom: 3px solid #EDAE49;
+  border-bottom: 4px solid transparent;
+  border-image: linear-gradient(90deg, #EDAE49 0%, #D1495B 50%, #00798C 100%) 1;
   display: inline-block;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+.form-section h2::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -4px;
+  width: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #00798C 0%, #EDAE49 100%);
+  transition: width 0.5s ease;
+}
+
+.form-section:hover h2::before {
+  width: 100%;
 }
 
 .form-section h3 {
@@ -145,15 +170,17 @@
   border-radius: 10px;
   font-size: 1rem;
   transition: all 0.3s ease;
-  background: white;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(248, 250, 252, 1) 100%);
 }
 
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #00798C;
-  box-shadow: 0 0 0 3px rgba(0, 121, 140, 0.1);
+  border-color: #EDAE49;
+  box-shadow: 0 0 0 4px rgba(237, 174, 73, 0.15), 0 4px 12px rgba(0, 121, 140, 0.2);
+  background: white;
+  transform: translateY(-1px);
 }
 
 .form-group input.readonly {
@@ -170,24 +197,45 @@
 .subsection {
   margin-top: 2rem;
   padding: 1.5rem;
-  background: linear-gradient(135deg, rgba(0, 121, 140, 0.05) 0%, rgba(48, 99, 142, 0.03) 100%);
+  background: linear-gradient(135deg, rgba(237, 174, 73, 0.08) 0%, rgba(0, 121, 140, 0.05) 100%);
   border-radius: 12px;
-  border: 2px solid rgba(0, 121, 140, 0.15);
+  border: 2px solid rgba(237, 174, 73, 0.3);
+  box-shadow: 0 4px 12px rgba(237, 174, 73, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.subsection::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(180deg, #EDAE49 0%, #D1495B 100%);
 }
 
 .dynamic-item {
-  background: white;
-  border: 2px solid rgba(0, 121, 140, 0.15);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(248, 250, 252, 0.95) 100%);
+  border: 2px solid rgba(237, 174, 73, 0.3);
   border-radius: 12px;
   padding: 1.5rem;
   margin-bottom: 1rem;
   position: relative;
-  box-shadow: 0 2px 8px rgba(0, 121, 140, 0.08);
+  box-shadow: 0 4px 15px rgba(237, 174, 73, 0.15);
+  transition: all 0.3s ease;
+}
+
+.dynamic-item:hover {
+  box-shadow: 0 8px 25px rgba(237, 174, 73, 0.25);
+  transform: translateY(-2px);
+  border-color: #EDAE49;
 }
 
 .dynamic-item.itinerary-day {
-  border-left: 5px solid #EDAE49;
-  background: linear-gradient(135deg, rgba(237, 174, 73, 0.03) 0%, rgba(255, 255, 255, 1) 100%);
+  border-left: 6px solid #EDAE49;
+  background: linear-gradient(135deg, rgba(237, 174, 73, 0.05) 0%, rgba(255, 255, 255, 1) 100%);
+  box-shadow: 0 4px 15px rgba(237, 174, 73, 0.2);
 }
 
 .btn-add {
@@ -241,25 +289,33 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem;
-  background: linear-gradient(135deg, rgba(0, 121, 140, 0.05) 0%, rgba(48, 99, 142, 0.03) 100%);
-  border: 2px solid rgba(0, 121, 140, 0.15);
-  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(248, 250, 252, 1) 100%);
+  border: 2px solid rgba(0, 121, 140, 0.2);
+  border-radius: 10px;
   transition: all 0.3s ease;
+  cursor: pointer;
 }
 
 .checkbox-item:hover {
-  background: linear-gradient(135deg, rgba(237, 174, 73, 0.1) 0%, rgba(209, 73, 91, 0.05) 100%);
+  background: linear-gradient(135deg, rgba(237, 174, 73, 0.15) 0%, rgba(209, 73, 91, 0.08) 100%);
   border-color: #EDAE49;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(237, 174, 73, 0.2);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 6px 20px rgba(237, 174, 73, 0.3);
+}
+
+.checkbox-item input[type="checkbox"]:checked + label {
+  color: #EDAE49;
+  font-weight: 700;
 }
 
 .checkbox-item input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  accent-color: #00798C;
+  width: 20px;
+  height: 20px;
+  accent-color: #EDAE49;
   margin: 0;
   cursor: pointer;
+  border: 2px solid #00798C;
+  border-radius: 4px;
 }
 
 .checkbox-item label {
@@ -302,19 +358,41 @@
   background: linear-gradient(135deg, #EDAE49 0%, #D1495B 100%);
   color: white;
   border: none;
-  border-radius: 10px;
-  font-size: 1rem;
+  border-radius: 12px;
+  font-size: 1.1rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
   min-width: 200px;
-  box-shadow: 0 4px 15px rgba(237, 174, 73, 0.4);
+  box-shadow: 0 6px 20px rgba(237, 174, 73, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-submit::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.btn-submit:hover::before {
+  width: 300px;
+  height: 300px;
 }
 
 .btn-submit:hover:not(:disabled) {
   background: linear-gradient(135deg, #D1495B 0%, #EDAE49 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(237, 174, 73, 0.5);
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 10px 30px rgba(237, 174, 73, 0.6);
 }
 
 .btn-submit:disabled {
@@ -412,6 +490,10 @@
   color: #00798C;
   margin-top: 0.5rem;
   font-weight: 500;
+  padding: 0.5rem 0.75rem;
+  background: linear-gradient(135deg, rgba(0, 121, 140, 0.08) 0%, rgba(237, 174, 73, 0.05) 100%);
+  border-radius: 6px;
+  border-left: 3px solid #EDAE49;
 }
 
 /* Form Section Animations */
@@ -467,4 +549,150 @@
   border-color: #00798C;
   box-shadow: 0 0 0 3px rgba(0, 121, 140, 0.1);
   min-height: 120px;
+}
+
+
+/* Enhanced Color Styling for Fonts, Buttons, and Text Boxes */
+
+/* Labels with Gradient Text */
+.form-group label {
+  font-weight: 700 !important;
+  font-size: 0.95rem !important;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: linear-gradient(135deg, #003D5B 0%, #00798C 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Enhanced Input Fields */
+.form-group input,
+.form-group select,
+.form-group textarea {
+  font-weight: 500 !important;
+  color: #003D5B !important;
+  border: 2px solid rgba(237, 174, 73, 0.3) !important;
+  box-shadow: 0 2px 8px rgba(0, 121, 140, 0.08) !important;
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: rgba(0, 121, 140, 0.5) !important;
+  font-weight: 400 !important;
+  font-style: italic;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: #EDAE49 !important;
+  box-shadow: 0 0 0 4px rgba(237, 174, 73, 0.2), 0 6px 20px rgba(237, 174, 73, 0.3) !important;
+  background: linear-gradient(135deg, #FFFFFF 0%, rgba(237, 174, 73, 0.05) 100%) !important;
+  transform: translateY(-2px) !important;
+  font-weight: 600 !important;
+}
+
+/* Number Inputs */
+.form-group input[type="number"] {
+  font-weight: 700 !important;
+  color: #EDAE49 !important;
+  font-size: 1.1rem !important;
+}
+
+.form-group input[type="number"]:focus {
+  color: #D1495B !important;
+}
+
+/* Date Inputs */
+.form-group input[type="date"] {
+  font-weight: 600 !important;
+  color: #00798C !important;
+}
+
+/* Select Dropdown */
+.form-group select {
+  font-weight: 600 !important;
+  color: #003D5B !important;
+}
+
+/* Textarea */
+.form-group textarea {
+  line-height: 1.6 !important;
+  color: #003D5B !important;
+}
+
+/* Section Headings */
+.form-section h3 {
+  background: linear-gradient(135deg, #00798C 0%, #EDAE49 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+}
+
+.form-section h4 {
+  color: #EDAE49 !important;
+  background: linear-gradient(135deg, rgba(237, 174, 73, 0.15) 0%, rgba(0, 121, 140, 0.08) 100%) !important;
+  border-left: 5px solid #EDAE49 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+}
+
+/* Add Button */
+.btn-add {
+  background: linear-gradient(135deg, #EDAE49 0%, #D1495B 100%) !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+  box-shadow: 0 4px 15px rgba(237, 174, 73, 0.4) !important;
+}
+
+.btn-add:hover {
+  background: linear-gradient(135deg, #D1495B 0%, #EDAE49 100%) !important;
+  transform: translateY(-3px) scale(1.03) !important;
+  box-shadow: 0 8px 25px rgba(237, 174, 73, 0.5) !important;
+}
+
+/* Remove Button */
+.btn-remove {
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+}
+
+/* Cancel Button */
+.btn-cancel {
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+}
+
+/* Checkbox Labels */
+.checkbox-item label {
+  font-weight: 600 !important;
+  color: #003D5B !important;
+  font-size: 0.95rem !important;
+}
+
+.checkbox-item input[type="checkbox"]:checked + label {
+  color: #EDAE49 !important;
+  font-weight: 700 !important;
+}
+
+/* Help Text */
+.form-help {
+  font-weight: 600 !important;
+  background: linear-gradient(135deg, rgba(237, 174, 73, 0.12) 0%, rgba(0, 121, 140, 0.08) 100%) !important;
+  border-left: 4px solid #EDAE49 !important;
+}
+
+/* Empty Message */
+.empty-itinerary-message {
+  color: #00798C !important;
+  font-weight: 600 !important;
+  font-size: 1.05rem !important;
+  background: linear-gradient(135deg, rgba(237, 174, 73, 0.1) 0%, rgba(0, 121, 140, 0.08) 100%) !important;
+  border: 3px dashed rgba(237, 174, 73, 0.4) !important;
 }

@@ -19,6 +19,7 @@ const PaymentMethods = () => {
   const [billData, setBillData] = useState(null);
   const [showCompletionPopup, setShowCompletionPopup] = useState(false);
   const [completionData, setCompletionData] = useState(null);
+  const [showAlreadyPaidPopup, setShowAlreadyPaidPopup] = useState(false);
   
   // Payment form states
   const [cardForm, setCardForm] = useState({
@@ -118,6 +119,7 @@ const PaymentMethods = () => {
       const { data } = await paymentAPI.processPayment(paymentData);
       
       if (data.success) {
+        if (data.alreadyPaid) { setShowAlreadyPaidPopup(true); return; }
         // Prepare completion data with card-specific message
         const completionInfo = {
           tripData: {
@@ -175,6 +177,7 @@ const PaymentMethods = () => {
       const { data } = await paymentAPI.processPayment(paymentData);
       
       if (data.success) {
+        if (data.alreadyPaid) { setShowAlreadyPaidPopup(true); return; }
         // Prepare completion data with QR-specific message
         const completionInfo = {
           tripData: {
@@ -231,6 +234,7 @@ const PaymentMethods = () => {
       const { data } = await paymentAPI.processPayment(paymentData);
       
       if (data.success) {
+        if (data.alreadyPaid) { setShowAlreadyPaidPopup(true); return; }
         // Calculate EMI amount for display
         const emiAmount = calculateEMI(tripData.basePrice, emiForm.tenure);
         
@@ -272,7 +276,7 @@ const PaymentMethods = () => {
   const handleCompletionPopupClose = () => {
     setShowCompletionPopup(false);
     setCompletionData(null);
-    navigate('/notifications');
+    navigate('/dashboard');
   };
 
   const handleViewBillFromPopup = () => {
@@ -287,10 +291,9 @@ const PaymentMethods = () => {
     setShowBill(false);
     setBillData(null);
     if (completionData) {
-      // If we came from completion popup, go back to it
       setShowCompletionPopup(true);
     } else {
-      navigate('/notifications');
+      navigate('/dashboard');
     }
   };
 
@@ -316,6 +319,7 @@ const PaymentMethods = () => {
       const { data } = await paymentAPI.processPayment(paymentData);
       
       if (data.success) {
+        if (data.alreadyPaid) { setShowAlreadyPaidPopup(true); return; }
         // Format date and time for display
         const visitDate = new Date(officeForm.preferredDate).toLocaleDateString('en-GB', {
           weekday: 'long',
@@ -473,6 +477,16 @@ const PaymentMethods = () => {
     }
   };
 
+  const formatPrice = (amount, currency) => {
+    if (!amount || amount === 0) return 'Price not set';
+    const num = parseFloat(amount);
+    if (currency === 'INR') return `₹${num.toLocaleString('en-IN')}`;
+    if (currency === 'USD') return `$${num.toLocaleString('en-US')}`;
+    if (currency === 'EUR') return `€${num.toLocaleString()}`;
+    if (currency === 'GBP') return `£${num.toLocaleString()}`;
+    return `${currency} ${num.toLocaleString()}`;
+  };
+
   const calculateEMI = (amount, tenure) => {
     const principal = parseFloat(amount);
     const months = parseInt(tenure);
@@ -519,7 +533,8 @@ const PaymentMethods = () => {
             <h3>{tripData.tripTitle}</h3>
             <p>📍 {tripData.destination}</p>
             <div className="price-display">
-              <span className="amount">{tripData.currency} {tripData.basePrice}</span>
+              <span className="price-label">Total Amount</span>
+              <span className="amount">{formatPrice(tripData.basePrice, tripData.currency)}</span>
             </div>
           </div>
         </div>
@@ -695,7 +710,7 @@ const PaymentMethods = () => {
                     </>
                   ) : (
                     <>
-                      🔒 Pay Securely - {tripData.currency} {tripData.basePrice}
+                      🔒 Pay Securely — {formatPrice(tripData.basePrice, tripData.currency)}
                     </>
                   )}
                 </button>
@@ -721,7 +736,7 @@ const PaymentMethods = () => {
                     </div>
                     <div className="detail-row">
                       <span className="label">Amount:</span>
-                      <span className="value">{tripData.currency} {tripData.basePrice}</span>
+                      <span className="value">{formatPrice(tripData.basePrice, tripData.currency)}</span>
                     </div>
                     <div className="detail-row">
                       <span className="label">Trip:</span>
@@ -737,7 +752,7 @@ const PaymentMethods = () => {
                     <li>Tap on "Scan & Pay" or "QR Code" option</li>
                     <li>Point your camera at the QR code above</li>
                     <li>Verify merchant name: "Journey Junction"</li>
-                    <li>Confirm payment amount: {tripData.currency} {tripData.basePrice}</li>
+                    <li>Confirm payment amount: {formatPrice(tripData.basePrice, tripData.currency)}</li>
                     <li>Enter your UPI PIN to authorize payment</li>
                     <li>Wait for payment confirmation</li>
                     <li>Click "Payment Completed" below after successful transaction</li>
@@ -790,7 +805,7 @@ const PaymentMethods = () => {
                       >
                         <div className="tenure">{tenure} Months</div>
                         <div className="emi-amount">
-                          {tripData.currency} {calculateEMI(tripData.basePrice, tenure)}/month
+                          {formatPrice(calculateEMI(tripData.basePrice, tenure), tripData.currency)}/month
                         </div>
                       </div>
                     ))}
@@ -845,7 +860,7 @@ const PaymentMethods = () => {
                     </>
                   ) : (
                     <>
-                      💳 Setup EMI - {emiForm.tenure} months @ {tripData.currency} {calculateEMI(tripData.basePrice, emiForm.tenure)}/month
+                      💳 Setup EMI — {emiForm.tenure} months @ {formatPrice(calculateEMI(tripData.basePrice, emiForm.tenure), tripData.currency)}/month
                     </>
                   )}
                 </button>
@@ -959,6 +974,26 @@ const PaymentMethods = () => {
         )}
       </div>
       
+      {/* Already Paid Popup */}
+      {showAlreadyPaidPopup && (
+        <div className="already-paid-overlay">
+          <div className="already-paid-modal">
+            <div className="already-paid-icon">✅</div>
+            <h2>Payment Already Done!</h2>
+            <p>You have already completed the payment for <strong>{tripData?.tripTitle}</strong>.</p>
+            <p className="already-paid-sub">No need to pay again. Your booking is confirmed and active.</p>
+            <div className="already-paid-actions">
+              <button className="already-paid-dashboard-btn" onClick={() => { setShowAlreadyPaidPopup(false); navigate('/dashboard'); }}>
+                🏠 Go to Dashboard
+              </button>
+              <button className="already-paid-close-btn" onClick={() => setShowAlreadyPaidPopup(false)}>
+                ✖ Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Payment Completion Popup */}
       {showCompletionPopup && completionData && (
         <PaymentCompletionPopup
