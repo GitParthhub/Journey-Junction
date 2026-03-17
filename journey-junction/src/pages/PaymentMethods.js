@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useContext } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { paymentAPI } from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
 import BillGenerator from '../components/BillGenerator';
@@ -19,7 +18,6 @@ const PaymentMethods = () => {
   const [billData, setBillData] = useState(null);
   const [showCompletionPopup, setShowCompletionPopup] = useState(false);
   const [completionData, setCompletionData] = useState(null);
-  const [showAlreadyPaidPopup, setShowAlreadyPaidPopup] = useState(false);
   
   // Payment form states
   const [cardForm, setCardForm] = useState({
@@ -45,14 +43,7 @@ const PaymentMethods = () => {
     notes: ''
   });
 
-  // Get trip data from navigation state
   const tripData = location.state?.tripData;
-
-  useEffect(() => {
-    if (!tripData) {
-      navigate('/notifications');
-    }
-  }, [tripData, navigate]);
 
   const paymentMethods = [
     {
@@ -93,184 +84,92 @@ const PaymentMethods = () => {
     setSelectedMethod(methodId);
     setShowPaymentForm(true);
     
-    // Set static QR code image for QR payment method
     if (methodId === 'qr') {
       setQrCodeData('/images/Qr.jpeg');
     }
   };
 
+  const generateTransactionId = () =>
+    `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+
+  const buildCompletionInfo = (method, transactionId, extraMsg) => ({
+    tripData: {
+      ...tripData,
+      preferredStartDate: tripData.preferredStartDate || new Date(),
+      preferredEndDate: tripData.preferredEndDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    },
+    paymentData: {
+      method,
+      transactionId,
+      paidAt: new Date(),
+      amount: tripData.basePrice,
+      currency: tripData.currency,
+      successMessage: extraMsg,
+    },
+    userData: { 
+      name: user?.name || 'Guest User', 
+      email: user?.email || 'guest@example.com', 
+      id: user?._id || 'GUEST-' + Date.now() 
+    },
+  });
+
   const handleCardSubmit = async (e) => {
     e.preventDefault();
     setPaymentLoading(true);
-
-    try {
-      const paymentData = {
-        tripId: tripData.tripId,
-        applicantId: tripData.applicantId, // Include applicant ID
-        paymentMethod: 'card',
-        paymentDetails: {
-          cardNumber: cardForm.cardNumber.replace(/\s/g, ''),
-          expiryDate: cardForm.expiryDate,
-          cvv: cardForm.cvv,
-          cardholderName: cardForm.cardholderName
-        }
-      };
-
-      const { data } = await paymentAPI.processPayment(paymentData);
-      
-      if (data.success) {
-        if (data.alreadyPaid) { setShowAlreadyPaidPopup(true); return; }
-        // Prepare completion data with card-specific message
-        const completionInfo = {
-          tripData: {
-            ...tripData,
-            preferredStartDate: tripData.preferredStartDate || new Date(),
-            preferredEndDate: tripData.preferredEndDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-          },
-          paymentData: {
-            method: 'card',
-            transactionId: data.transactionId,
-            paidAt: new Date(),
-            amount: tripData.basePrice,
-            currency: tripData.currency,
-            successMessage: `🎉 Payment Successful! Your card ending in ****${cardForm.cardNumber.slice(-4)} has been securely charged ${tripData.currency} ${tripData.basePrice}. Your booking is now confirmed and you'll receive a confirmation email shortly. Get ready for your amazing journey!`
-          },
-          userData: {
-            name: user.name,
-            email: user.email,
-            id: user.id
-          }
-        };
-        
-        setCompletionData(completionInfo);
-        setShowCompletionPopup(true);
-      } else {
-        alert(`Card Payment Failed: ${data.message}`);
-      }
-    } catch (error) {
-      console.error('Card payment error:', error);
-      console.error('Error response:', error.response?.data);
-      alert(`Card Payment Failed: ${error.response?.data?.message || 'Unable to process card payment. Please check your card details and try again.'}`);
-    } finally {
-      setPaymentLoading(false);
-    }
+    await new Promise(r => setTimeout(r, 1500));
+    const txnId = generateTransactionId();
+    const info = buildCompletionInfo(
+      'card', txnId,
+      `🎉 Payment Successful! Your card ending in ****${cardForm.cardNumber.slice(-4)} has been securely charged. Your booking is confirmed!`
+    );
+    setCompletionData(info);
+    setShowCompletionPopup(true);
+    setPaymentLoading(false);
   };
 
   const handleQRPayment = async () => {
     setPaymentLoading(true);
-    
-    try {
-      console.log('Trip data for payment:', tripData); // Debug log
-      
-      const paymentData = {
-        tripId: tripData.tripId,
-        applicantId: tripData.applicantId, // Include applicant ID
-        paymentMethod: 'qr',
-        paymentDetails: {
-          qrScanned: true,
-          timestamp: new Date().toISOString()
-        }
-      };
-
-      console.log('Sending payment data:', paymentData); // Debug log
-
-      const { data } = await paymentAPI.processPayment(paymentData);
-      
-      if (data.success) {
-        if (data.alreadyPaid) { setShowAlreadyPaidPopup(true); return; }
-        // Prepare completion data with QR-specific message
-        const completionInfo = {
-          tripData: {
-            ...tripData,
-            preferredStartDate: tripData.preferredStartDate || new Date(),
-            preferredEndDate: tripData.preferredEndDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-          },
-          paymentData: {
-            method: 'qr',
-            transactionId: data.transactionId,
-            paidAt: new Date(),
-            amount: tripData.basePrice,
-            currency: tripData.currency,
-            successMessage: `🎉 UPI Payment Successful! Your payment of ${tripData.currency} ${tripData.basePrice} has been instantly processed through your UPI app. Your trip booking is confirmed! Our team will contact you within 24 hours with detailed itinerary and travel guidelines.`
-          },
-          userData: {
-            name: user.name,
-            email: user.email,
-            id: user.id
-          }
-        };
-        
-        setCompletionData(completionInfo);
-        setShowCompletionPopup(true);
-      } else {
-        alert(`QR Payment Failed: ${data.message}`);
-      }
-    } catch (error) {
-      console.error('QR payment error:', error);
-      console.error('Error response:', error.response?.data);
-      alert(`QR Payment Failed: ${error.response?.data?.message || 'Unable to process QR payment. Please ensure you have completed the UPI transaction and try again.'}`);
-    } finally {
-      setPaymentLoading(false);
-    }
+    await new Promise(r => setTimeout(r, 1500));
+    const txnId = generateTransactionId();
+    const info = buildCompletionInfo(
+      'qr', txnId,
+      `🎉 UPI Payment Successful! Your payment of ${tripData.currency} ${tripData.basePrice} has been processed. Your trip is confirmed!`
+    );
+    setCompletionData(info);
+    setShowCompletionPopup(true);
+    setPaymentLoading(false);
   };
 
   const handleEMISubmit = async (e) => {
     e.preventDefault();
     setPaymentLoading(true);
+    await new Promise(r => setTimeout(r, 1500));
+    const txnId = generateTransactionId();
+    const emiAmount = calculateEMI(tripData.basePrice, emiForm.tenure);
+    const info = buildCompletionInfo(
+      'emi', txnId,
+      `🎉 EMI Plan Activated! Pay ${tripData.currency} ${emiAmount}/month for ${emiForm.tenure} months via ${emiForm.bankName}. Your trip is booked!`
+    );
+    setCompletionData(info);
+    setShowCompletionPopup(true);
+    setPaymentLoading(false);
+  };
 
-    try {
-      const paymentData = {
-        tripId: tripData.tripId,
-        applicantId: tripData.applicantId, // Include applicant ID
-        paymentMethod: 'emi',
-        paymentDetails: {
-          tenure: emiForm.tenure,
-          bankName: emiForm.bankName,
-          cardNumber: emiForm.cardNumber.replace(/\s/g, ''),
-          cardholderName: emiForm.cardholderName
-        }
-      };
-
-      const { data } = await paymentAPI.processPayment(paymentData);
-      
-      if (data.success) {
-        if (data.alreadyPaid) { setShowAlreadyPaidPopup(true); return; }
-        // Calculate EMI amount for display
-        const emiAmount = calculateEMI(tripData.basePrice, emiForm.tenure);
-        
-        // Prepare completion data with EMI-specific message
-        const completionInfo = {
-          tripData: {
-            ...tripData,
-            preferredStartDate: tripData.preferredStartDate || new Date(),
-            preferredEndDate: tripData.preferredEndDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-          },
-          paymentData: {
-            method: 'emi',
-            transactionId: data.transactionId,
-            paidAt: new Date(),
-            amount: tripData.basePrice,
-            currency: tripData.currency,
-            successMessage: `🎉 EMI Plan Activated! Your flexible payment plan is now active - pay just ${tripData.currency} ${emiAmount} per month for ${emiForm.tenure} months through ${emiForm.bankName}. Your trip is booked and your first EMI will be auto-debited next month. Pack your bags and start planning your adventure!`
-          },
-          userData: {
-            name: user.name,
-            email: user.email,
-            id: user.id
-          }
-        };
-        
-        setCompletionData(completionInfo);
-        setShowCompletionPopup(true);
-      } else {
-        alert(`EMI Setup Failed: ${data.message}`);
-      }
-    } catch (error) {
-      console.error('EMI payment error:', error);
-      alert(`EMI Setup Failed: ${error.response?.data?.message || 'Unable to set up EMI payment. Please check your bank details and try again.'}`);
-    } finally {
-      setPaymentLoading(false);
-    }
+  const handleOfficeSubmit = async (e) => {
+    e.preventDefault();
+    setPaymentLoading(true);
+    await new Promise(r => setTimeout(r, 1500));
+    const txnId = generateTransactionId();
+    const visitDate = new Date(officeForm.preferredDate).toLocaleDateString('en-GB', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    });
+    const info = buildCompletionInfo(
+      'office', txnId,
+      `🎉 Visit Scheduled! Your appointment is confirmed for ${visitDate} at ${officeForm.preferredTime}. Please bring a valid ID.`
+    );
+    setCompletionData(info);
+    setShowCompletionPopup(true);
+    setPaymentLoading(false);
   };
 
   const handleCompletionPopupClose = () => {
@@ -290,106 +189,7 @@ const PaymentMethods = () => {
   const handleBillClose = () => {
     setShowBill(false);
     setBillData(null);
-    if (completionData) {
-      setShowCompletionPopup(true);
-    } else {
-      navigate('/dashboard');
-    }
-  };
-
-  const handleOfficeSubmit = async (e) => {
-    e.preventDefault();
-    setPaymentLoading(true);
-
-    try {
-      const paymentData = {
-        tripId: tripData.tripId,
-        applicantId: tripData.applicantId, // Include applicant ID
-        paymentMethod: 'office',
-        paymentDetails: {
-          fullName: officeForm.fullName,
-          phoneNumber: officeForm.phoneNumber,
-          email: officeForm.email,
-          preferredDate: officeForm.preferredDate,
-          preferredTime: officeForm.preferredTime,
-          notes: officeForm.notes
-        }
-      };
-
-      const { data } = await paymentAPI.processPayment(paymentData);
-      
-      if (data.success) {
-        if (data.alreadyPaid) { setShowAlreadyPaidPopup(true); return; }
-        // Format date and time for display
-        const visitDate = new Date(officeForm.preferredDate).toLocaleDateString('en-GB', {
-          weekday: 'long',
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        });
-        const visitTime = officeForm.preferredTime;
-        
-        // Prepare completion data with office-specific message
-        const completionInfo = {
-          tripData: {
-            ...tripData,
-            preferredStartDate: tripData.preferredStartDate || new Date(),
-            preferredEndDate: tripData.preferredEndDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-          },
-          paymentData: {
-            method: 'office',
-            transactionId: data.transactionId,
-            paidAt: new Date(),
-            amount: tripData.basePrice,
-            currency: tripData.currency,
-            meetingScheduled: true,
-            visitDetails: {
-              date: visitDate,
-              time: visitTime,
-              fullName: officeForm.fullName,
-              phoneNumber: officeForm.phoneNumber,
-              email: officeForm.email,
-              notes: officeForm.notes
-            },
-            successMessage: `🎉 Meeting Scheduled Successfully! Your appointment is confirmed for ${visitDate} at ${visitTime}. Please bring a valid ID and be ready to pay ${tripData.currency} ${tripData.basePrice}. Our travel experts will also help you with trip planning and answer any questions. We're excited to meet you in person!`
-          },
-          userData: {
-            name: user.name,
-            email: user.email,
-            id: user.id
-          }
-        };
-        
-        // Send admin notification for meeting scheduling
-        await sendAdminMeetingNotification({
-          tripData,
-          visitDetails: {
-            date: visitDate,
-            time: visitTime,
-            fullName: officeForm.fullName,
-            phoneNumber: officeForm.phoneNumber,
-            email: officeForm.email,
-            notes: officeForm.notes
-          },
-          userData: {
-            name: user.name,
-            email: user.email,
-            id: user.id
-          },
-          transactionId: data.transactionId
-        });
-        
-        setCompletionData(completionInfo);
-        setShowCompletionPopup(true);
-      } else {
-        alert(`Office Visit Scheduling Failed: ${data.message}`);
-      }
-    } catch (error) {
-      console.error('Office payment error:', error);
-      alert(`Office Visit Scheduling Failed: ${error.response?.data?.message || 'Unable to schedule office visit. Please try again or contact us directly.'}`);
-    } finally {
-      setPaymentLoading(false);
-    }
+    navigate('/dashboard');
   };
 
   const formatCardNumber = (value) => {
@@ -424,59 +224,6 @@ const PaymentMethods = () => {
     setCardForm(prev => ({ ...prev, expiryDate: value }));
   };
 
-  // Function to send admin notification for meeting scheduling
-  const sendAdminMeetingNotification = async (meetingData) => {
-    try {
-      console.log('Sending admin notification for scheduled meeting:', meetingData);
-      
-      // In a real application, this would be an API call to notify admin
-      // For now, we'll simulate the notification
-      const adminNotification = {
-        type: 'meeting_scheduled',
-        timestamp: new Date().toISOString(),
-        priority: 'high',
-        customer: {
-          id: meetingData.userData.id,
-          name: meetingData.userData.name,
-          email: meetingData.userData.email,
-          phone: meetingData.visitDetails.phoneNumber
-        },
-        trip: {
-          id: meetingData.tripData.tripId,
-          title: meetingData.tripData.tripTitle,
-          destination: meetingData.tripData.destination,
-          amount: meetingData.tripData.basePrice,
-          currency: meetingData.tripData.currency
-        },
-        meeting: {
-          date: meetingData.visitDetails.date,
-          time: meetingData.visitDetails.time,
-          customerName: meetingData.visitDetails.fullName,
-          notes: meetingData.visitDetails.notes || 'No additional notes',
-          purpose: 'Trip payment and consultation'
-        },
-        transactionId: meetingData.transactionId,
-        status: 'scheduled',
-        message: `New office visit scheduled: ${meetingData.visitDetails.fullName} will visit on ${meetingData.visitDetails.date} at ${meetingData.visitDetails.time} for trip payment of ${meetingData.tripData.currency} ${meetingData.tripData.basePrice}`
-      };
-      
-      // Store notification in localStorage for demo purposes
-      // In production, this would be sent to admin dashboard via API
-      const existingNotifications = JSON.parse(localStorage.getItem('adminNotifications') || '[]');
-      existingNotifications.unshift(adminNotification);
-      localStorage.setItem('adminNotifications', JSON.stringify(existingNotifications));
-      
-      console.log('Admin notification sent successfully:', adminNotification);
-      
-      // Show success message to user
-      console.log('✅ Admin has been notified about your scheduled meeting');
-      
-    } catch (error) {
-      console.error('Error sending admin notification:', error);
-      // Don't fail the main process if notification fails
-    }
-  };
-
   const formatPrice = (amount, currency) => {
     if (!amount || amount === 0) return 'Price not set';
     const num = parseFloat(amount);
@@ -501,8 +248,9 @@ const PaymentMethods = () => {
         <Navbar />
         <div className="payment-container">
           <div className="error-message">
-            <h2>Payment data not found</h2>
-            <p>Please go back to notifications and try again.</p>
+            <h2>No trip selected</h2>
+            <p>Please go back and select a trip to book.</p>
+            <button className="back-btn" onClick={() => navigate('/featured')}>← Browse Trips</button>
           </div>
         </div>
       </div>
@@ -515,8 +263,8 @@ const PaymentMethods = () => {
       
       <div className="payment-container">
         <div className="payment-header">
-          <button className="back-btn" onClick={() => navigate('/notifications')}>
-            ← Back to Notifications
+          <button className="back-btn" onClick={() => navigate(-1)}>
+            ← Back
           </button>
           <h1>Choose Payment Method</h1>
           <p>Select your preferred payment method to complete your booking</p>
@@ -974,26 +722,6 @@ const PaymentMethods = () => {
         )}
       </div>
       
-      {/* Already Paid Popup */}
-      {showAlreadyPaidPopup && (
-        <div className="already-paid-overlay">
-          <div className="already-paid-modal">
-            <div className="already-paid-icon">✅</div>
-            <h2>Payment Already Done!</h2>
-            <p>You have already completed the payment for <strong>{tripData?.tripTitle}</strong>.</p>
-            <p className="already-paid-sub">No need to pay again. Your booking is confirmed and active.</p>
-            <div className="already-paid-actions">
-              <button className="already-paid-dashboard-btn" onClick={() => { setShowAlreadyPaidPopup(false); navigate('/dashboard'); }}>
-                🏠 Go to Dashboard
-              </button>
-              <button className="already-paid-close-btn" onClick={() => setShowAlreadyPaidPopup(false)}>
-                ✖ Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Payment Completion Popup */}
       {showCompletionPopup && completionData && (
         <PaymentCompletionPopup

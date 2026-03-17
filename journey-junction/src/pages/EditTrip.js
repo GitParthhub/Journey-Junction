@@ -59,6 +59,9 @@ const EditTrip = () => {
     accessibilityNeeds: '',
     celebrationType: '',
     specialNotes: '',
+    passportCopy: null,
+    idProof: null,
+    visaDocument: null,
     paymentMethod: '',
     advancePaymentAmount: '',
     billingAddress: ''
@@ -111,6 +114,21 @@ const EditTrip = () => {
         ? prev.selectedActivities.filter(a => a !== activity)
         : [...prev.selectedActivities, activity]
     }));
+  };
+
+  const handleFileChange = (e) => {
+    const { name, files } = e.target;
+    if (files && files[0]) {
+      const file = files[0];
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setFormData(prev => ({
+          ...prev,
+          [name]: event.target.result
+        }));
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const calculateDuration = () => {
@@ -816,7 +834,49 @@ const EditTrip = () => {
             </div>
           </div>
 
-          {/* 9. Payment Information */}
+          {/* 9. Document Upload */}
+          <div className="form-section">
+            <h2>9️⃣ Document Upload</h2>
+            <p className="section-description">Optional but useful.</p>
+            
+            <div className="form-group">
+              <label htmlFor="passportCopy">Passport Copy Upload</label>
+              <input
+                type="file"
+                id="passportCopy"
+                name="passportCopy"
+                onChange={handleFileChange}
+                accept="image/*,.pdf"
+              />
+              {formData.passportCopy && <span className="file-uploaded">✓ File uploaded</span>}
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="idProof">ID Proof Upload</label>
+              <input
+                type="file"
+                id="idProof"
+                name="idProof"
+                onChange={handleFileChange}
+                accept="image/*,.pdf"
+              />
+              {formData.idProof && <span className="file-uploaded">✓ File uploaded</span>}
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="visaDocument">Visa Document Upload</label>
+              <input
+                type="file"
+                id="visaDocument"
+                name="visaDocument"
+                onChange={handleFileChange}
+                accept="image/*,.pdf"
+              />
+              {formData.visaDocument && <span className="file-uploaded">✓ File uploaded</span>}
+            </div>
+          </div>
+
+          {/* 10. Payment Information */}
           <div className="form-section">
             <h2>🔟 Payment Information</h2>
             

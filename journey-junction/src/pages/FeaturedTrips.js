@@ -6,6 +6,11 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import './FeaturedTrips.css';
 
+const CATEGORY_ICONS = {
+  adventure: '🏔️', beach: '🏖️', cultural: '🏛️', luxury: '💎',
+  budget: '💰', family: '👨‍👩‍👧', honeymoon: '💑', wildlife: '🦁',
+};
+
 const FeaturedTrips = () => {
   const [trips, setTrips] = useState([]);
   const [applyingFor, setApplyingFor] = useState(null);
@@ -291,6 +296,27 @@ const FeaturedTrips = () => {
     return name ? name.split(' ').map(n => n[0]).join('').toUpperCase() : 'U';
   };
 
+  const handleBookTrip = (trip) => {
+    if (!user) {
+      navigate('/');
+      return;
+    }
+    navigate('/confirm-trip', {
+      state: {
+        tripData: {
+          tripTitle: trip.title,
+          destination: trip.destination,
+          basePrice: trip.basePrice || trip.budget,
+          currency: trip.currency || 'INR',
+          image: getImageForTrip(trip, 0),
+          duration: trip.duration,
+          category: trip.category,
+          tripId: trip._id,
+        }
+      }
+    });
+  };
+
   const handleApplyForTrip = async (tripId) => {
     if (!user) {
       alert('Please login to apply for trips');
@@ -336,36 +362,45 @@ const FeaturedTrips = () => {
 
   const hasUserApplied = (trip) => {
     if (!user || !trip.applicants) return false;
-    return trip.applicants.some(applicant => applicant.userId._id === user.id);
+    return trip.applicants.some(applicant => 
+      applicant && applicant.userId && applicant.userId._id === user._id
+    );
   };
 
-  const handleShowDetails = (tripId) => {
-    navigate(`/trip/${tripId}`);
+  const openTripDetails = (trip) => {
+    navigate(`/trip/${trip._id}/details`);
   };
 
   return (
     <div className="featured-trips">
       <Navbar />
-      
+
+      {/* ── Hero Banner ── */}
       <div className="featured-hero">
-        <div className="featured-hero-bg" style={{ backgroundImage: `url(/images/bali.webp)` }}></div>
+        <div className="featured-hero-bg" style={{ backgroundImage: `url(/images/photo-1476514525535-07fb3b4ae5f1.avif)` }}></div>
         <div className="featured-hero-overlay"></div>
         <div className="featured-hero-content">
+          <span className="hero-eyebrow">✈️ Handpicked for You</span>
           <h1 className="featured-hero-title">Featured Destinations</h1>
           <p className="featured-hero-subtitle">
-            Discover extraordinary travel experiences curated by our community of explorers
+            Extraordinary journeys curated by our community of explorers
           </p>
+          <div className="hero-stats">
+            <div className="hero-stat"><strong>{trips.length}</strong><span>Trips Available</span></div>
+            <div className="hero-stat-divider"></div>
+            <div className="hero-stat"><strong>100%</strong><span>Verified</span></div>
+            <div className="hero-stat-divider"></div>
+            <div className="hero-stat"><strong>24/7</strong><span>Support</span></div>
+          </div>
         </div>
       </div>
 
       <div className="featured-container">
         <div className="featured-header">
           <h2 className="featured-title">Curated Travel Experiences</h2>
-          <p className="featured-subtitle">
-            Handpicked destinations and itineraries from seasoned travelers
-          </p>
+          <p className="featured-subtitle">Handpicked destinations and itineraries from seasoned travelers</p>
         </div>
-        
+
         {trips.length === 0 ? (
           <div className="empty-featured">
             <div className="empty-featured-icon">⭐</div>
@@ -374,168 +409,108 @@ const FeaturedTrips = () => {
           </div>
         ) : (
           <div className="featured-grid">
-            {trips.map((trip, index) => (
+            {trips.map((trip) => (
               <div key={trip._id} className="featured-card">
-                <div className="featured-badge">Featured</div>
-                
-                {/* Image Carousel - Always show since we have predefined images */}
+
+                {/* ── Card Image ── */}
                 <div className="image-carousel">
-                  <img 
-                    src={getImageForTrip(trip, currentImageIndex[trip._id] || 0)} 
+                  <img
+                    src={getImageForTrip(trip, currentImageIndex[trip._id] || 0)}
                     alt={trip.title}
-                    className={`featured-image ${
-                      imageTransitioning[trip._id] ? 'fade-out' : 'fade-in'
-                    }`}
-                    onError={(e) => {
-                      // Fallback to a default image if the current one fails to load
-                      e.target.src = '/images/background.jpg';
-                    }}
+                    className={`featured-image ${imageTransitioning[trip._id] ? 'fade-out' : 'fade-in'}`}
+                    onError={(e) => { e.target.src = '/images/background.jpg'; }}
                   />
-                  
-                  {/* Carousel Controls - Always show since we have multiple images */}
-                  <button 
-                    className="carousel-btn carousel-prev"
-                    onClick={(e) => prevImage(trip._id, e)}
-                    aria-label="Previous image"
-                  >
-                    ‹
-                  </button>
-                  <button 
-                    className="carousel-btn carousel-next"
-                    onClick={(e) => nextImage(trip._id, e)}
-                    aria-label="Next image"
-                  >
-                    ›
-                  </button>
-                  
-                  {/* Carousel Indicators */}
+                  <button className="carousel-btn carousel-prev" onClick={(e) => prevImage(trip._id, e)}>‹</button>
+                  <button className="carousel-btn carousel-next" onClick={(e) => nextImage(trip._id, e)}>›</button>
                   <div className="carousel-indicators">
-                    {Array.from({ length: getTotalImagesForTrip(trip) }, (_, dotIndex) => (
-                      <button
-                        key={dotIndex}
-                        className={`carousel-dot ${
-                          (currentImageIndex[trip._id] || 0) === dotIndex ? 'active' : ''
-                        }`}
-                        onClick={(e) => goToImage(trip._id, dotIndex, e)}
-                        aria-label={`Go to image ${dotIndex + 1}`}
-                      />
+                    {Array.from({ length: getTotalImagesForTrip(trip) }, (_, i) => (
+                      <button key={i} className={`carousel-dot ${(currentImageIndex[trip._id] || 0) === i ? 'active' : ''}`} onClick={(e) => goToImage(trip._id, i, e)} />
                     ))}
                   </div>
+
+                  {/* Overlay badges */}
+                  <div className="card-img-overlay">
+                    <span className="badge-featured">⭐ Featured</span>
+                    {trip.category && (
+                      <span className="badge-category">
+                        {CATEGORY_ICONS[trip.category?.toLowerCase()] || '🌍'} {trip.category}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Price pill on image */}
+                  <div className="card-price-pill">
+                    <span className="price-from">From</span>
+                    <span className="price-amount">{formatCurrency(trip.basePrice || trip.budget, trip.currency)}</span>
+                  </div>
                 </div>
+
+                {/* ── Card Body ── */}
                 <div className="featured-content">
-                  <h3 className="featured-card-title">{trip.title}</h3>
-                  <p className="featured-destination">{trip.destination}{trip.city ? `, ${trip.city}` : ''}</p>
-                  <p className="featured-description">{trip.shortDescription || trip.itinerary || trip.description}</p>
-                  
-                  <div className="featured-meta">
-                    <div className="featured-meta-item">
-                      <span className="featured-meta-label">Duration</span>
-                      <span className="featured-meta-value">
-                        {formatDateRange(trip)}
-                      </span>
+                  <div className="card-top">
+                    <h3 className="featured-card-title">{trip.title}</h3>
+                    <p className="featured-destination">{trip.destination}{trip.city ? `, ${trip.city}` : ''}</p>
+                    <p className="featured-description">{trip.shortDescription || trip.description}</p>
+                  </div>
+
+                  {/* Duration + Seats row */}
+                  <div className="card-info-row">
+                    <div className="card-info-item">
+                      <span className="info-icon">🕐</span>
+                      <span>{formatDateRange(trip)}</span>
                     </div>
-                    <div className="featured-meta-item">
-                      <span className="featured-meta-label">Price</span>
-                      <span className="featured-meta-value">
-                        {formatCurrency(trip.basePrice || trip.budget, trip.currency)}
-                      </span>
+                    <div className="card-info-item">
+                      <span className="info-icon">💺</span>
+                      <span>{trip.totalSeats ? `${trip.totalSeats} seats` : 'Open seats'}</span>
+                    </div>
+                    <div className="card-info-item">
+                      <span className="info-icon">👥</span>
+                      <span>{trip.applicants?.length || 0} joined</span>
                     </div>
                   </div>
-                  
-                  {/* Trip Category */}
-                  {trip.category && (
-                    <div className="featured-category">
-                      <span className="category-badge">{trip.category}</span>
-                    </div>
-                  )}
-                  
-                  {/* Activities from new structure or fallback to old */}
-                  {((trip.activitiesIncluded && Object.values(trip.activitiesIncluded).some(Boolean)) || 
+
+                  {/* Activities */}
+                  {((trip.activitiesIncluded && Object.values(trip.activitiesIncluded).some(Boolean)) ||
                     (trip.activities && trip.activities.length > 0)) && (
-                    <div className="featured-activities">
-                      <div className="activities-label">Activities & Experiences</div>
-                      <div className="activities-tags">
-                        {/* New activities structure */}
-                        {trip.activitiesIncluded && Object.entries(trip.activitiesIncluded)
-                          .filter(([key, value]) => value)
-                          .slice(0, 4)
-                          .map(([key, value], idx) => (
-                            <span key={idx} className="activity-tag">
-                              {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                            </span>
+                    <div className="activities-tags">
+                      {trip.activitiesIncluded
+                        ? Object.entries(trip.activitiesIncluded).filter(([, v]) => v).slice(0, 3).map(([k], i) => (
+                            <span key={i} className="activity-tag">{k.replace(/([A-Z])/g, ' $1').trim()}</span>
                           ))
-                        }
-                        {/* Fallback to old activities structure */}
-                        {trip.activities && trip.activities.slice(0, 4).map((activity, idx) => (
-                          <span key={idx} className="activity-tag">{activity.trim()}</span>
-                        ))}
-                        {((trip.activitiesIncluded && Object.values(trip.activitiesIncluded).filter(Boolean).length > 4) ||
-                          (trip.activities && trip.activities.length > 4)) && (
-                          <span className="activity-tag">+more</span>
-                        )}
-                      </div>
+                        : trip.activities?.slice(0, 3).map((a, i) => (
+                            <span key={i} className="activity-tag">{a.trim()}</span>
+                          ))
+                      }
                     </div>
                   )}
-                  
+
+                  {/* Organizer */}
                   <div className="featured-author">
-                    <div className="author-avatar">
-                      {getAuthorInitials(trip.userId?.name)}
-                    </div>
+                    <div className="author-avatar">{getAuthorInitials(trip.userId?.name)}</div>
                     <div className="author-info">
                       <h4>{trip.userId?.name}</h4>
                       <p>Trip Organizer</p>
                     </div>
-                  </div>
-                  
-                  <div className="featured-stats">
-                    <div className="stat-item">
-                      <span className="stat-number">{trip.applicants?.length || 0}</span>
-                      <span className="stat-label">Applicants</span>
-                    </div>
-                    <div className="stat-item">
-                      <span className="stat-number">{trip.totalSeats || 'N/A'}</span>
-                      <span className="stat-label">Total Seats</span>
-                    </div>
-                    <div className="stat-item">
-                      <span className="stat-number">{trip.status || 'Active'}</span>
-                      <span className="stat-label">Status</span>
+                    <div className="trip-status-dot" data-status={trip.status || 'active'}>
+                      {trip.status || 'Active'}
                     </div>
                   </div>
-                  
+
+                  {/* ── Action Buttons ── */}
                   <div className="featured-actions">
-                    <button 
-                      className="btn-details"
-                      onClick={() => handleShowDetails(trip._id)}
-                    >
-                      📋 Show Details
-                    </button>
-                    
-                    {user && user.role !== 'admin' && user.id !== trip.userId._id ? (
-                      hasUserApplied(trip) ? (
-                        <button className="btn-applied" disabled>
-                          ✅ Applied
-                        </button>
-                      ) : (
-                        <button 
-                          className="btn-apply"
-                          onClick={() => handleApplyForTrip(trip._id)}
-                          disabled={applyingFor === trip._id}
-                        >
-                          {applyingFor === trip._id ? '⏳ Applying...' : '🚀 Apply to Join'}
-                        </button>
-                      )
-                    ) : user && (user.role === 'admin' || user.id === trip.userId._id) ? (
-                      <button 
-                        className="btn-edit-trip"
-                        onClick={() => navigate(`/admin/trips/${trip._id}/edit`)}
-                      >
-                        ✏️ Edit Trip
+                    <button className="btn-details" onClick={() => openTripDetails(trip)}>👁️ View Details</button>
+
+                    {user && user.role === 'admin' ? (
+                      <button className="btn-edit-trip" onClick={() => navigate(`/admin/trips/${trip._id}/edit`)}>✏️ Edit Trip</button>
+                    ) : user && trip.userId && user._id === trip.userId._id ? (
+                      <button className="btn-edit-trip" onClick={() => navigate(`/admin/trips/${trip._id}/edit`)}>✏️ Edit Trip</button>
+                    ) : hasUserApplied(trip) ? (
+                      <button className="btn-applied" disabled>✅ Applied</button>
+                    ) : (
+                      <button className="btn-book" onClick={() => handleBookTrip(trip)}>
+                        🏷️ Book This Trip
                       </button>
-                    ) : !user ? (
-                      <button className="btn-login" onClick={() => alert('Please login to apply')}>
-                        🔐 Login to Apply
-                      </button>
-                    ) : null}
+                    )}
                   </div>
                 </div>
               </div>

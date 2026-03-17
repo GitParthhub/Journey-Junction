@@ -16,14 +16,30 @@ const Navbar = () => {
     if (user) {
       if (user.role === 'admin') {
         fetchAdminUnreadCount();
-        // Poll for new notifications every 30 seconds
-        const interval = setInterval(fetchAdminUnreadCount, 30000);
-        return () => clearInterval(interval);
+        // Poll for new notifications every 10 seconds for more responsive updates
+        const interval = setInterval(fetchAdminUnreadCount, 10000);
+        
+        // Refresh count when window gains focus
+        const handleFocus = () => fetchAdminUnreadCount();
+        window.addEventListener('focus', handleFocus);
+        
+        return () => {
+          clearInterval(interval);
+          window.removeEventListener('focus', handleFocus);
+        };
       } else {
         fetchUnreadCount();
-        // Poll for new notifications every 30 seconds
-        const interval = setInterval(fetchUnreadCount, 30000);
-        return () => clearInterval(interval);
+        // Poll for new notifications every 10 seconds for more responsive updates
+        const interval = setInterval(fetchUnreadCount, 10000);
+        
+        // Refresh count when window gains focus
+        const handleFocus = () => fetchUnreadCount();
+        window.addEventListener('focus', handleFocus);
+        
+        return () => {
+          clearInterval(interval);
+          window.removeEventListener('focus', handleFocus);
+        };
       }
     }
   }, [user]);
@@ -95,7 +111,7 @@ const Navbar = () => {
               <Link to="/notifications" className="nav-link notifications-link">
                 <span className="nav-icon">🔔</span>Notifications
                 {unreadCount > 0 && (
-                  <span className="notification-badge">{unreadCount}</span>
+                  <span className="notification-dot"></span>
                 )}
               </Link>
             </li>
@@ -105,7 +121,7 @@ const Navbar = () => {
               <Link to="/admin/notifications" className="nav-link notifications-link">
                 <span className="nav-icon">🔔</span>Notifications
                 {adminUnreadCount > 0 && (
-                  <span className="notification-badge">{adminUnreadCount}</span>
+                  <span className="notification-dot"></span>
                 )}
               </Link>
             </li>

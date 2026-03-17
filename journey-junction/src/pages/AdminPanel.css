@@ -303,6 +303,20 @@
   box-shadow: 0 6px 20px rgba(0, 121, 140, 0.3);
 }
 
+.btn-view {
+  background: linear-gradient(135deg, #00798C 0%, #30638E 100%);
+  color: white;
+  border: 1px solid #00798C;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.btn-view:hover {
+  background: linear-gradient(135deg, #30638E 0%, #003D5B 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 121, 140, 0.3);
+}
+
 .btn-edit {
   background: var(--gray-100);
   color: var(--gray-700);

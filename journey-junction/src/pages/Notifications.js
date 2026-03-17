@@ -19,6 +19,17 @@ const Notifications = () => {
     try {
       const { data } = await authAPI.getNotifications();
       setNotifications(data);
+      
+      // Mark all unread notifications as read when user visits the page
+      const unreadNotifications = data.filter(n => !n.isRead);
+      if (unreadNotifications.length > 0) {
+        // Mark each unread notification as read
+        for (const notification of unreadNotifications) {
+          await authAPI.markNotificationRead(notification.id);
+        }
+        // Update local state to reflect read status
+        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      }
     } catch (error) {
       console.error('Error fetching notifications:', error);
     } finally {

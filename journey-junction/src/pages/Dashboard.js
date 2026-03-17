@@ -11,10 +11,10 @@ const Dashboard = () => {
   const [filteredTrips, setFilteredTrips] = useState([]);
   const [activeFilter, setActiveFilter] = useState('all');
   const [loading, setLoading] = useState(true);
-  const [viewDetailsTrip, setViewDetailsTrip] = useState(null);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [allReviews, setAllReviews] = useState([]);
   const [showReviewsModal, setShowReviewsModal] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState({});
+  const [featuredTrips, setFeaturedTrips] = useState([]);
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
 
@@ -26,9 +26,56 @@ const Dashboard = () => {
     '/images/ubud-bali.jpg'
   ];
 
+  const getImagesByDestination = (destination, category) => {
+    const dest = destination?.toLowerCase() || '';
+    const cat = category?.toLowerCase() || '';
+    
+    if (dest.includes('bali')) {
+      return [
+        '/images/bali/bali.webp',
+        '/images/bali/bali-2.jpg',
+        '/images/bali/bali-3.jpg',
+        '/images/bali/ubud-bali.jpg'
+      ];
+    }
+    
+    if (dest.includes('paris') || dest.includes('france')) {
+      return [
+        '/images/paris/paris.webp',
+        '/images/paris/paris-2.jpg',
+        '/images/paris/paris-4.jpeg'
+      ];
+    }
+    
+    if (dest.includes('himalaya') || dest.includes('himachal') || dest.includes('triund') || dest.includes('hampta') || dest.includes('kedar') || dest.includes('bhamhatal')) {
+      return [
+        '/images/himalaya/him2.avif',
+        '/images/himalaya/him3.avif',
+        '/images/himalaya/him4.jpg',
+        '/images/himalaya/hampta.jpg',
+        '/images/himalaya/bhamhatal.jpg'
+      ];
+    }
+    
+    if (cat.includes('trekking') || cat.includes('adventure') || dest.includes('mountain') || dest.includes('trek')) {
+      return [
+        '/images/himalaya/him2.avif',
+        '/images/himalaya/him3.avif',
+        '/images/himalaya/him4.jpg',
+        '/images/himalaya/hampta.jpg',
+        '/images/himalaya/bhamhatal.jpg'
+      ];
+    }
+    
+    return defaultImages;
+  };
+
   useEffect(() => {
     fetchTrips();
-    if (user?.role === 'admin') fetchAllReviews();
+    if (user?.role === 'admin') {
+      fetchAllReviews();
+      fetchFeaturedTrips();
+    }
   }, []);
 
   // Refresh trips when returning to dashboard (e.g., after editing)
@@ -74,6 +121,15 @@ const Dashboard = () => {
     }
   };
 
+  const fetchFeaturedTrips = async () => {
+    try {
+      const { data } = await tripAPI.getFeaturedTrips();
+      setFeaturedTrips(data.slice(0, 6));
+    } catch (error) {
+      console.error('Error fetching featured trips:', error);
+    }
+  };
+
   const filterTrips = (status) => {
     setActiveFilter(status);
     if (status === 'all') {
@@ -106,14 +162,16 @@ const Dashboard = () => {
     // Handle multiple images from new format
     if (trip.images && trip.images.length > 0) {
       const bestIndex = trip.bestPhotoIndex || 0;
-      return trip.images[bestIndex] || trip.images[0]; // Use best photo or first image
+      return trip.images[bestIndex] || trip.images[0];
     }
     // Handle single image from old format
     if (trip.image) {
       return trip.image;
     }
-    // Use default images
-    return defaultImages[index % defaultImages.length];
+    // Get images by destination
+    const destImages = getImagesByDestination(trip.destination, trip.category);
+    const carouselIndex = currentImageIndex[trip._id] || 0;
+    return destImages[carouselIndex % destImages.length];
   };
 
   const formatBudget = (trip) => {
@@ -167,14 +225,33 @@ const Dashboard = () => {
     });
   };
 
-  const openDetailsModal = (trip) => {
-    // Navigate to dedicated details page instead of modal
+  const openTripDetails = (trip) => {
     navigate(`/trip/${trip._id}/details`);
   };
 
-  const closeDetailsModal = () => {
-    setShowDetailsModal(false);
-    setViewDetailsTrip(null);
+  const getTotalImagesForTrip = (trip) => {
+    const destImages = getImagesByDestination(trip.destination, trip.category);
+    return destImages.length;
+  };
+
+  const nextImage = (tripId, e) => {
+    e.stopPropagation();
+    const trip = filteredTrips.find(t => t._id === tripId);
+    const totalImages = getTotalImagesForTrip(trip);
+    setCurrentImageIndex(prev => ({
+      ...prev,
+      [tripId]: ((prev[tripId] || 0) + 1) % totalImages
+    }));
+  };
+
+  const prevImage = (tripId, e) => {
+    e.stopPropagation();
+    const trip = filteredTrips.find(t => t._id === tripId);
+    const totalImages = getTotalImagesForTrip(trip);
+    setCurrentImageIndex(prev => ({
+      ...prev,
+      [tripId]: prev[tripId] === 0 ? totalImages - 1 : prev[tripId] - 1
+    }));
   };
 
   return (
@@ -275,10 +352,137 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Trips Section */}
+        {/* Featured Trips Section for Admin */}
+        {user?.role === 'admin' && featuredTrips.length > 0 && (
+          <div className="featured-trips-section">
+            <div className="section-header">
+              <h2 className="section-title">⭐ Featured Trips</h2>
+            </div>
+            <div className="trips-grid">
+              {featuredTrips.map((trip, index) => (
+                <div key={trip._id} className={`trip-card-new featured-trip ${trip.status || 'planned'}`}>
+                  <div className="trip-card-header">
+                    <div className="trip-image-wrapper">
+                      <img 
+                        src={getImageForTrip(trip, index)} 
+                        alt={trip.title}
+                        className="trip-image-new"
+                        onError={(e) => {
+                          e.target.src = defaultImages[0];
+                        }}
+                      />
+                      {getTotalImagesForTrip(trip) > 1 && (
+                        <>
+                          <button 
+                            className="carousel-btn carousel-prev"
+                            onClick={(e) => prevImage(trip._id, e)}
+                          >
+                            ‹
+                          </button>
+                          <button 
+                            className="carousel-btn carousel-next"
+                            onClick={(e) => nextImage(trip._id, e)}
+                          >
+                            ›
+                          </button>
+                          <div className="image-counter">
+                            {(currentImageIndex[trip._id] || 0) + 1}/{getTotalImagesForTrip(trip)}
+                          </div>
+                        </>
+                      )}
+                      <div className="trip-overlay">
+                        <div className="trip-badges">
+                          <div className={`status-badge ${trip.status || 'planned'}`}>
+                            {(trip.status || 'Planned').charAt(0).toUpperCase() + (trip.status || 'planned').slice(1)}
+                          </div>
+                          <div className="featured-star">⭐</div>
+                        </div>
+                        <div className="trip-quick-actions">
+                          <button 
+                            onClick={() => navigate(`/trip/${trip._id}/edit`)} 
+                            className="quick-action-btn edit-btn"
+                            title="Edit Trip"
+                          >
+                            ✏️
+                          </button>
+                          <button 
+                            onClick={() => openTripDetails(trip)} 
+                            className="quick-action-btn details-btn"
+                            title="View Details"
+                          >
+                            👁️
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="trip-card-body">
+                    <div className="trip-header-info">
+                      <h3 className="trip-title-new">{trip.title}</h3>
+                      <div className="trip-destination-new">
+                        <span className="location-icon">📍</span>
+                        {trip.destinationCity && trip.destinationCountry 
+                          ? `${trip.destinationCity}, ${trip.destinationCountry}` 
+                          : trip.destination || 'Destination TBD'
+                        }
+                      </div>
+                    </div>
+                    
+                    <p className="trip-description-new">
+                      {trip.description || trip.detailedDescription || trip.shortDescription || 'No description available'}
+                    </p>
+                    
+                    <div className="trip-details-grid">
+                      <div className="detail-item">
+                        <div className="detail-icon">⏱️</div>
+                        <div className="detail-content">
+                          <span className="detail-label">Duration</span>
+                          <span className="detail-value">
+                            {trip.startDate && trip.endDate 
+                              ? formatDateRange(trip.startDate, trip.endDate)
+                              : trip.duration?.days 
+                                ? `${trip.duration.days} days`
+                                : 'Flexible'
+                            }
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="detail-item">
+                        <div className="detail-icon">💰</div>
+                        <div className="detail-content">
+                          <span className="detail-label">Budget</span>
+                          <span className="detail-value">
+                            {formatBudget(trip)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="trip-card-footer">
+                      <div className="trip-actions-new">
+                        <button 
+                          onClick={() => openTripDetails(trip)} 
+                          className="btn-primary-new"
+                        >
+                          <span className="btn-icon">👁️</span>
+                          View Details
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Trips Section - Only show for regular users */}
+        {user?.role !== 'admin' && (
         <div className="trips-section">
           <div className="section-header">
-            <h2 className="section-title">{user?.role === 'admin' ? 'Trip Packages' : 'Your Trips'}</h2>
+            <h2 className="section-title">Your Trips</h2>
             
             {/* Filter Buttons */}
             <div className="trip-filters">
@@ -357,6 +561,25 @@ const Dashboard = () => {
                           e.target.src = defaultImages[0];
                         }}
                       />
+                      {getTotalImagesForTrip(trip) > 1 && (
+                        <>
+                          <button 
+                            className="carousel-btn carousel-prev"
+                            onClick={(e) => prevImage(trip._id, e)}
+                          >
+                            ‹
+                          </button>
+                          <button 
+                            className="carousel-btn carousel-next"
+                            onClick={(e) => nextImage(trip._id, e)}
+                          >
+                            ›
+                          </button>
+                          <div className="image-counter">
+                            {(currentImageIndex[trip._id] || 0) + 1}/{getTotalImagesForTrip(trip)}
+                          </div>
+                        </>
+                      )}
                       <div className="trip-overlay">
                         <div className="trip-badges">
                           <div className={`status-badge ${trip.status || 'planned'}`}>
@@ -370,20 +593,19 @@ const Dashboard = () => {
                         </div>
                         <div className="trip-quick-actions">
                           <button 
-                            onClick={() => openDetailsModal(trip)} 
-                            className="quick-action-btn view-btn"
-                            title="View Complete Details"
-                          >
-                            👁️
-                          </button>
-                          <button 
                             onClick={() => navigate(`/trip/${trip._id}/edit`)} 
                             className="quick-action-btn edit-btn"
                             title="Edit Trip"
                           >
                             ✏️
                           </button>
-
+                          <button 
+                            onClick={() => openTripDetails(trip)} 
+                            className="quick-action-btn details-btn"
+                            title="View Details"
+                          >
+                            👁️
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -435,9 +657,8 @@ const Dashboard = () => {
                     <div className="trip-card-footer">
                       <div className="trip-actions-new">
                         <button 
-                          onClick={() => openDetailsModal(trip)} 
+                          onClick={() => openTripDetails(trip)} 
                           className="btn-primary-new"
-                          title="View complete trip details"
                         >
                           <span className="btn-icon">👁️</span>
                           View Details
@@ -467,6 +688,8 @@ const Dashboard = () => {
             </div>
           )}
         </div>
+        )}
+
       </div>
 
       {showReviewsModal && (

@@ -213,12 +213,6 @@ const Settings = () => {
             >
               🔐 Password
             </button>
-            <button
-              className={`tab-button ${activeTab === 'preferences' ? 'active' : ''}`}
-              onClick={() => setActiveTab('preferences')}
-            >
-              🎨 Preferences
-            </button>
           </div>
 
           {/* Profile Tab */}
@@ -364,55 +358,6 @@ const Settings = () => {
           )}
 
           {/* Preferences Tab */}
-          {activeTab === 'preferences' && (
-            <div className="tab-content">
-              <div className="settings-card">
-                <h2>Theme Preferences</h2>
-                <div className="theme-section">
-                  <div className="theme-option">
-                    <div className="theme-preview dark-preview"></div>
-                    <div className="theme-info">
-                      <h3>Dark Theme</h3>
-                      <p>Easy on the eyes, perfect for night browsing</p>
-                    </div>
-                    <button
-                      className={`theme-button ${theme === 'dark' ? 'active' : ''}`}
-                      onClick={() => setTheme('dark')}
-                    >
-                      {theme === 'dark' ? '✓ Active' : 'Select'}
-                    </button>
-                  </div>
-
-                  <div className="theme-option">
-                    <div className="theme-preview light-preview"></div>
-                    <div className="theme-info">
-                      <h3>Light Theme</h3>
-                      <p>Clean and bright, great for daytime use</p>
-                    </div>
-                    <button
-                      className={`theme-button ${theme === 'light' ? 'active' : ''}`}
-                      onClick={() => setTheme('light')}
-                    >
-                      {theme === 'light' ? '✓ Active' : 'Select'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="settings-card danger-zone">
-                <h2>Danger Zone</h2>
-                <div className="logout-section">
-                  <div className="logout-info">
-                    <h3>Logout</h3>
-                    <p>Sign out from your account</p>
-                  </div>
-                  <button onClick={handleLogout} className="btn-logout">
-                    🚪 Logout
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 

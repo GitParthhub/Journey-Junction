@@ -227,8 +227,64 @@ const AdminPanel = () => {
       return trip.image;
     }
     
-    // If no uploaded images, return null to show placeholder
-    return null;
+    // If no uploaded images, use destination-based images
+    const destImages = getImagesByDestination(trip.destination, trip.category);
+    return destImages[imageIndex % destImages.length];
+  };
+
+  const getImagesByDestination = (destination, category) => {
+    const dest = destination?.toLowerCase() || '';
+    const cat = category?.toLowerCase() || '';
+    
+    if (dest.includes('bali')) {
+      return [
+        '/images/bali/bali.webp',
+        '/images/bali/bali-2.jpg',
+        '/images/bali/bali-3.jpg',
+        '/images/bali/ubud-bali.jpg'
+      ];
+    }
+    
+    if (dest.includes('paris') || dest.includes('france')) {
+      return [
+        '/images/paris/paris.webp',
+        '/images/paris/paris-2.jpg',
+        '/images/paris/paris-4.jpeg'
+      ];
+    }
+    
+    if (dest.includes('himalaya') || dest.includes('himachal') || dest.includes('triund') || dest.includes('hampta') || dest.includes('kedar') || dest.includes('bhamhatal')) {
+      return [
+        '/images/himalaya/him2.avif',
+        '/images/himalaya/him3.avif',
+        '/images/himalaya/him4.jpg',
+        '/images/himalaya/hampta.jpg',
+        '/images/himalaya/bhamhatal.jpg'
+      ];
+    }
+    
+    if (cat.includes('trekking') || cat.includes('adventure') || dest.includes('mountain') || dest.includes('trek')) {
+      return [
+        '/images/himalaya/him2.avif',
+        '/images/himalaya/him3.avif',
+        '/images/himalaya/him4.jpg',
+        '/images/himalaya/hampta.jpg',
+        '/images/himalaya/bhamhatal.jpg'
+      ];
+    }
+    
+    if (cat.includes('beach') || dest.includes('beach') || dest.includes('island')) {
+      return [
+        '/images/beach/beach.jpeg',
+        '/images/beach/kutabeach.jpeg',
+        '/images/beach/nusapenida.jpeg'
+      ];
+    }
+    
+    return [
+      '/images/background.jpg',
+      '/images/photo-1476514525535-07fb3b4ae5f1.avif'
+    ];
   };
 
   const getTotalImagesForTrip = (trip) => {
@@ -387,8 +443,7 @@ const AdminPanel = () => {
     return trip?.applicants || [];
   };
 
-  const openDetailsModal = (trip) => {
-    // Navigate to dedicated details page instead of modal
+  const openDetailsPage = (trip) => {
     navigate(`/trip/${trip._id}/details`);
   };
 
@@ -586,17 +641,16 @@ const AdminPanel = () => {
                           <td>
                             <div className="table-actions">
                               <button 
-                                onClick={() => openDetailsModal(trip)} 
-                                className="btn-table btn-details"
-                                title="View complete trip details"
-                              >
-                                👁️ View Details
-                              </button>
-                              <button 
                                 onClick={() => navigate(`/admin/trips/${trip._id}/edit`)} 
                                 className="btn-table btn-edit"
                               >
                                 Edit
+                              </button>
+                              <button 
+                                onClick={() => openDetailsPage(trip)} 
+                                className="btn-table btn-view"
+                              >
+                                View Details
                               </button>
                               <button 
                                 onClick={() => toggleFeatured(trip._id)} 
@@ -912,404 +966,6 @@ const AdminPanel = () => {
         </div>
       </div>
 
-      {/* Trip Details Modal */}
-      {showDetailsModal && viewDetailsTrip && (
-        <div className="modal-overlay" onClick={closeDetailsModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Trip Details: {viewDetailsTrip.title}</h2>
-              <button className="modal-close" onClick={closeDetailsModal}>×</button>
-            </div>
-            
-            <div className="modal-body">
-              {/* 1. Basic Trip Information */}
-              <div className="details-section">
-                <h3>1️⃣ Basic Trip Information</h3>
-                <div className="details-grid">
-                  {viewDetailsTrip.title && (
-                    <div className="detail-item">
-                      <span className="detail-label">Trip Title:</span>
-                      <span className="detail-value">{viewDetailsTrip.title}</span>
-                    </div>
-                  )}
-                  {viewDetailsTrip.destinationCountry && (
-                    <div className="detail-item">
-                      <span className="detail-label">Destination Country:</span>
-                      <span className="detail-value">{viewDetailsTrip.destinationCountry}</span>
-                    </div>
-                  )}
-                  {viewDetailsTrip.destinationCity && (
-                    <div className="detail-item">
-                      <span className="detail-label">Destination City:</span>
-                      <span className="detail-value">{viewDetailsTrip.destinationCity}</span>
-                    </div>
-                  )}
-                  {viewDetailsTrip.destination && (
-                    <div className="detail-item">
-                      <span className="detail-label">Destination:</span>
-                      <span className="detail-value">{viewDetailsTrip.destination}</span>
-                    </div>
-                  )}
-                  {viewDetailsTrip.tripType && (
-                    <div className="detail-item">
-                      <span className="detail-label">Trip Type:</span>
-                      <span className="detail-value">{viewDetailsTrip.tripType}</span>
-                    </div>
-                  )}
-                  {viewDetailsTrip.numberOfTravelers && (
-                    <div className="detail-item">
-                      <span className="detail-label">Number of Travelers:</span>
-                      <span className="detail-value">{viewDetailsTrip.numberOfTravelers}</span>
-                    </div>
-                  )}
-                  {viewDetailsTrip.tripDuration && (
-                    <div className="detail-item">
-                      <span className="detail-label">Trip Duration:</span>
-                      <span className="detail-value">{viewDetailsTrip.tripDuration} Days</span>
-                    </div>
-                  )}
-                  {viewDetailsTrip.startDate && viewDetailsTrip.endDate && (
-                    <div className="detail-item">
-                      <span className="detail-label">Travel Dates:</span>
-                      <span className="detail-value">{formatDate(viewDetailsTrip.startDate)} - {formatDate(viewDetailsTrip.endDate)}</span>
-                    </div>
-                  )}
-                  {viewDetailsTrip.flexibleDates && (
-                    <div className="detail-item">
-                      <span className="detail-label">Flexible Dates:</span>
-                      <span className="detail-value">{viewDetailsTrip.flexibleDates === 'yes' ? '✅ Yes' : '❌ No'}</span>
-                    </div>
-                  )}
-                  {viewDetailsTrip.status && (
-                    <div className="detail-item">
-                      <span className="detail-label">Status:</span>
-                      <span className="detail-value">
-                        <span className={`status-badge ${viewDetailsTrip.status.toLowerCase()}`}>
-                          {viewDetailsTrip.status}
-                        </span>
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* 2. Traveler Details */}
-              {(viewDetailsTrip.fullName || viewDetailsTrip.email || viewDetailsTrip.mobileNumber) && (
-                <div className="details-section">
-                  <h3>2️⃣ Traveler Details</h3>
-                  <div className="details-grid">
-                    {viewDetailsTrip.fullName && (
-                      <div className="detail-item">
-                        <span className="detail-label">Full Name:</span>
-                        <span className="detail-value">{viewDetailsTrip.fullName}</span>
-                      </div>
-                    )}
-                    {viewDetailsTrip.email && (
-                      <div className="detail-item">
-                        <span className="detail-label">Email Address:</span>
-                        <span className="detail-value">{viewDetailsTrip.email}</span>
-                      </div>
-                    )}
-                    {viewDetailsTrip.mobileNumber && (
-                      <div className="detail-item">
-                        <span className="detail-label">Mobile Number:</span>
-                        <span className="detail-value">{viewDetailsTrip.mobileNumber}</span>
-                      </div>
-                    )}
-                    {viewDetailsTrip.ageGroup && (
-                      <div className="detail-item">
-                        <span className="detail-label">Age Group:</span>
-                        <span className="detail-value">{viewDetailsTrip.ageGroup}</span>
-                      </div>
-                    )}
-                    {viewDetailsTrip.nationality && (
-                      <div className="detail-item">
-                        <span className="detail-label">Nationality:</span>
-                        <span className="detail-value">{viewDetailsTrip.nationality}</span>
-                      </div>
-                    )}
-                    {viewDetailsTrip.passportAvailable && (
-                      <div className="detail-item">
-                        <span className="detail-label">Passport Available:</span>
-                        <span className="detail-value">{viewDetailsTrip.passportAvailable === 'yes' ? '✅ Yes' : '❌ No'}</span>
-                      </div>
-                    )}
-                    {viewDetailsTrip.emergencyContactName && (
-                      <div className="detail-item">
-                        <span className="detail-label">Emergency Contact:</span>
-                        <span className="detail-value">{viewDetailsTrip.emergencyContactName}</span>
-                      </div>
-                    )}
-                    {viewDetailsTrip.emergencyContactNumber && (
-                      <div className="detail-item">
-                        <span className="detail-label">Emergency Contact Number:</span>
-                        <span className="detail-value">{viewDetailsTrip.emergencyContactNumber}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* 3. Budget Preferences */}
-              {(viewDetailsTrip.budgetRange || viewDetailsTrip.budget || viewDetailsTrip.basePrice) && (
-                <div className="details-section">
-                  <h3>3️⃣ Budget Preferences</h3>
-                  <div className="details-grid">
-                    {viewDetailsTrip.budgetRange && (
-                      <div className="detail-item">
-                        <span className="detail-label">Budget Range:</span>
-                        <span className="detail-value">{viewDetailsTrip.budgetRange}</span>
-                      </div>
-                    )}
-                    {viewDetailsTrip.customBudget && (
-                      <div className="detail-item">
-                        <span className="detail-label">Custom Budget:</span>
-                        <span className="detail-value">₹{viewDetailsTrip.customBudget}</span>
-                      </div>
-                    )}
-                    {viewDetailsTrip.budget && (
-                      <div className="detail-item">
-                        <span className="detail-label">Budget:</span>
-                        <span className="detail-value">{formatCurrency(viewDetailsTrip.budget, viewDetailsTrip.currency)}</span>
-                      </div>
-                    )}
-                    {viewDetailsTrip.basePrice && (
-                      <div className="detail-item">
-                        <span className="detail-label">Base Price:</span>
-                        <span className="detail-value">{formatCurrency(viewDetailsTrip.basePrice, viewDetailsTrip.currency)}</span>
-                      </div>
-                    )}
-                    {viewDetailsTrip.preferredCurrency && (
-                      <div className="detail-item">
-                        <span className="detail-label">Preferred Currency:</span>
-                        <span className="detail-value">{viewDetailsTrip.preferredCurrency}</span>
-                      </div>
-                    )}
-                    {viewDetailsTrip.budgetType && (
-                      <div className="detail-item">
-                        <span className="detail-label">Budget Type:</span>
-                        <span className="detail-value">{viewDetailsTrip.budgetType}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* 4. Accommodation Preferences */}
-              {(viewDetailsTrip.hotelCategory || viewDetailsTrip.roomType || viewDetailsTrip.mealPlan) && (
-                <div className="details-section">
-                  <h3>4️⃣ Accommodation Preferences</h3>
-                  <div className="details-grid">
-                    {viewDetailsTrip.hotelCategory && (
-                      <div className="detail-item">
-                        <span className="detail-label">Hotel Category:</span>
-                        <span className="detail-value">{viewDetailsTrip.hotelCategory}</span>
-                      </div>
-                    )}
-                    {viewDetailsTrip.roomType && (
-                      <div className="detail-item">
-                        <span className="detail-label">Room Type:</span>
-                        <span className="detail-value">{viewDetailsTrip.roomType}</span>
-                      </div>
-                    )}
-                    {viewDetailsTrip.bedPreference && (
-                      <div className="detail-item">
-                        <span className="detail-label">Bed Preference:</span>
-                        <span className="detail-value">{viewDetailsTrip.bedPreference}</span>
-                      </div>
-                    )}
-                    {viewDetailsTrip.mealPlan && (
-                      <div className="detail-item">
-                        <span className="detail-label">Meal Plan:</span>
-                        <span className="detail-value">{viewDetailsTrip.mealPlan}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* 5. Transportation Preferences */}
-              {(viewDetailsTrip.internationalFlightRequired || viewDetailsTrip.localTransportType) && (
-                <div className="details-section">
-                  <h3>5️⃣ Transportation Preferences</h3>
-                  <div className="details-grid">
-                    {viewDetailsTrip.internationalFlightRequired && (
-                      <div className="detail-item">
-                        <span className="detail-label">International Flight Required:</span>
-                        <span className="detail-value">{viewDetailsTrip.internationalFlightRequired === 'yes' ? '✅ Yes' : '❌ No'}</span>
-                      </div>
-                    )}
-                    {viewDetailsTrip.preferredDepartureCity && (
-                      <div className="detail-item">
-                        <span className="detail-label">Preferred Departure City:</span>
-                        <span className="detail-value">{viewDetailsTrip.preferredDepartureCity}</span>
-                      </div>
-                    )}
-                    {viewDetailsTrip.preferredAirline && (
-                      <div className="detail-item">
-                        <span className="detail-label">Preferred Airline:</span>
-                        <span className="detail-value">{viewDetailsTrip.preferredAirline}</span>
-                      </div>
-                    )}
-                    {viewDetailsTrip.localTransportType && (
-                      <div className="detail-item">
-                        <span className="detail-label">Local Transport Type:</span>
-                        <span className="detail-value">{viewDetailsTrip.localTransportType}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* 6. Activities & Experiences */}
-              {(viewDetailsTrip.selectedActivities?.length > 0 || viewDetailsTrip.activities?.length > 0 || viewDetailsTrip.specialActivitiesRequested) && (
-                <div className="details-section">
-                  <h3>6️⃣ Activities & Experiences</h3>
-                  {(viewDetailsTrip.selectedActivities?.length > 0 || viewDetailsTrip.activities?.length > 0) && (
-                    <div className="activities-list">
-                      <span className="detail-label">Activities:</span>
-                      <div className="tags-container">
-                        {(viewDetailsTrip.selectedActivities || viewDetailsTrip.activities || []).map((activity, idx) => (
-                          <span key={idx} className="activity-tag">{activity}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {viewDetailsTrip.specialActivitiesRequested && (
-                    <div className="detail-item full-width">
-                      <span className="detail-label">Special Activities Requested:</span>
-                      <span className="detail-value">{viewDetailsTrip.specialActivitiesRequested}</span>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* 7. Itinerary Preferences */}
-              {(viewDetailsTrip.numberOfDestinations || viewDetailsTrip.mustVisitPlaces || viewDetailsTrip.dailyActivityLevel) && (
-                <div className="details-section">
-                  <h3>7️⃣ Itinerary Preferences</h3>
-                  <div className="details-grid">
-                    {viewDetailsTrip.numberOfDestinations && (
-                      <div className="detail-item">
-                        <span className="detail-label">Number of Destinations:</span>
-                        <span className="detail-value">{viewDetailsTrip.numberOfDestinations}</span>
-                      </div>
-                    )}
-                    {viewDetailsTrip.dailyActivityLevel && (
-                      <div className="detail-item">
-                        <span className="detail-label">Daily Activity Level:</span>
-                        <span className="detail-value">{viewDetailsTrip.dailyActivityLevel}</span>
-                      </div>
-                    )}
-                  </div>
-                  {viewDetailsTrip.mustVisitPlaces && (
-                    <div className="detail-item full-width">
-                      <span className="detail-label">Must Visit Places:</span>
-                      <span className="detail-value">{viewDetailsTrip.mustVisitPlaces}</span>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* 8. Special Requests */}
-              {(viewDetailsTrip.dietaryRequirements || viewDetailsTrip.accessibilityNeeds || viewDetailsTrip.celebrationType || viewDetailsTrip.specialNotes || viewDetailsTrip.description) && (
-                <div className="details-section">
-                  <h3>8️⃣ Special Requests</h3>
-                  <div className="details-grid">
-                    {viewDetailsTrip.dietaryRequirements && (
-                      <div className="detail-item">
-                        <span className="detail-label">Dietary Requirements:</span>
-                        <span className="detail-value">{viewDetailsTrip.dietaryRequirements}</span>
-                      </div>
-                    )}
-                    {viewDetailsTrip.accessibilityNeeds && (
-                      <div className="detail-item">
-                        <span className="detail-label">Accessibility Needs:</span>
-                        <span className="detail-value">{viewDetailsTrip.accessibilityNeeds}</span>
-                      </div>
-                    )}
-                    {viewDetailsTrip.celebrationType && viewDetailsTrip.celebrationType !== 'None' && (
-                      <div className="detail-item">
-                        <span className="detail-label">Celebration Type:</span>
-                        <span className="detail-value">{viewDetailsTrip.celebrationType}</span>
-                      </div>
-                    )}
-                  </div>
-                  {viewDetailsTrip.specialNotes && (
-                    <div className="detail-item full-width">
-                      <span className="detail-label">Special Notes:</span>
-                      <span className="detail-value">{viewDetailsTrip.specialNotes}</span>
-                    </div>
-                  )}
-                  {viewDetailsTrip.description && (
-                    <div className="detail-item full-width">
-                      <span className="detail-label">Description:</span>
-                      <span className="detail-value">{viewDetailsTrip.description}</span>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* 9. Document Upload */}
-              {(viewDetailsTrip.passportCopy || viewDetailsTrip.idProof || viewDetailsTrip.visaDocument) && (
-                <div className="details-section">
-                  <h3>9️⃣ Document Upload</h3>
-                  <div className="documents-grid">
-                    {viewDetailsTrip.passportCopy && (
-                      <div className="document-item">
-                        <span className="document-icon">📄</span>
-                        <span>Passport Copy</span>
-                        <span className="document-status">✅ Uploaded</span>
-                      </div>
-                    )}
-                    {viewDetailsTrip.idProof && (
-                      <div className="document-item">
-                        <span className="document-icon">📄</span>
-                        <span>ID Proof</span>
-                        <span className="document-status">✅ Uploaded</span>
-                      </div>
-                    )}
-                    {viewDetailsTrip.visaDocument && (
-                      <div className="document-item">
-                        <span className="document-icon">📄</span>
-                        <span>Visa Document</span>
-                        <span className="document-status">✅ Uploaded</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* 10. Payment Information */}
-              {(viewDetailsTrip.paymentMethod || viewDetailsTrip.advancePaymentAmount || viewDetailsTrip.billingAddress) && (
-                <div className="details-section">
-                  <h3>🔟 Payment Information</h3>
-                  <div className="details-grid">
-                    {viewDetailsTrip.paymentMethod && (
-                      <div className="detail-item">
-                        <span className="detail-label">Payment Method:</span>
-                        <span className="detail-value">{viewDetailsTrip.paymentMethod}</span>
-                      </div>
-                    )}
-                    {viewDetailsTrip.advancePaymentAmount && (
-                      <div className="detail-item">
-                        <span className="detail-label">Advance Payment Amount:</span>
-                        <span className="detail-value">₹{viewDetailsTrip.advancePaymentAmount}</span>
-                      </div>
-                    )}
-                  </div>
-                  {viewDetailsTrip.billingAddress && (
-                    <div className="detail-item full-width">
-                      <span className="detail-label">Billing Address:</span>
-                      <span className="detail-value">{viewDetailsTrip.billingAddress}</span>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

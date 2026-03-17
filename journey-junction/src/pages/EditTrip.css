@@ -180,6 +180,22 @@
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
+.section-description {
+  color: rgba(0, 61, 91, 0.7);
+  font-size: 0.9rem;
+  margin: -16px 0 20px 0;
+  font-style: italic;
+  font-weight: 500;
+}
+
+.file-uploaded {
+  display: inline-block;
+  margin-top: 8px;
+  color: #00798C;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
 .form-group {
   margin-bottom: 20px;
 }

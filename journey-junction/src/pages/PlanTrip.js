@@ -61,6 +61,17 @@ const PlanTrip = () => {
     celebrationType: '',
     specialNotes: '',
     
+    // Travel Insurance & Safety
+    travelInsurance: 'no',
+    insuranceProvider: '',
+    insuranceCoverage: '',
+    emergencyInsurance: 'no',
+    medicalRequirements: '',
+    vaccinationStatus: '',
+    safetyGuidelines: '',
+    emergencyProcedures: '',
+    healthAndSafetyNotes: '',
+    
     // Document Upload
     passportCopy: null,
     idProof: null,
@@ -91,6 +102,8 @@ const PlanTrip = () => {
   const dailyActivityLevels = ['Relaxed', 'Moderate', 'Busy'];
   const celebrationTypes = ['Birthday', 'Anniversary', 'Honeymoon', 'None'];
   const paymentMethods = ['Credit Card', 'Debit Card', 'UPI', 'Net Banking'];
+  const insuranceProviders = ['ICICI Lombard', 'HDFC ERGO', 'Bajaj Allianz', 'TATA AIG', 'Reliance General', 'Other'];
+  const vaccinationStatuses = ['Fully Vaccinated', 'Partially Vaccinated', 'Not Vaccinated', 'Not Required'];
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -781,6 +794,7 @@ const PlanTrip = () => {
           {/* 9. Document Upload */}
           <div className="form-section">
             <h2>9️⃣ Document Upload</h2>
+            <p className="section-description">Optional but useful.</p>
             
             <div className="form-group">
               <label htmlFor="passportCopy">Passport Copy Upload</label>

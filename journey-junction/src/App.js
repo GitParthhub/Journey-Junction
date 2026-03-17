@@ -6,12 +6,11 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import PlanTrip from './pages/PlanTrip';
 import EditTrip from './pages/EditTrip';
+import TripDetailsNew from './pages/TripDetailsNew';
 import FeaturedTrips from './pages/FeaturedTrips';
 import AdminPanel from './pages/AdminPanel';
 import AdminTripForm from './pages/AdminTripForm';
 import AdminNotifications from './pages/AdminNotifications';
-import TripDetails from './pages/TripDetails';
-import TripDetailsView from './pages/TripDetailsView';
 import Notifications from './pages/Notifications';
 import PaymentMethods from './pages/PaymentMethods';
 import Settings from './pages/Settings';
@@ -27,6 +26,7 @@ import Careers from './pages/Careers';
 import Press from './pages/Press';
 import Blog from './pages/Blog';
 import Partners from './pages/Partners';
+import ConfirmTrip from './pages/ConfirmTrip';
 import './App.css';
 
 function App() {
@@ -43,7 +43,9 @@ function App() {
           <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
           <Route path="/plan-trip" element={<PrivateRoute><PlanTrip /></PrivateRoute>} />
           <Route path="/trip/:id/edit" element={<PrivateRoute><EditTrip /></PrivateRoute>} />
+          <Route path="/trip/:id/details" element={<PrivateRoute><TripDetailsNew /></PrivateRoute>} />
           <Route path="/featured" element={<PrivateRoute><FeaturedTrips /></PrivateRoute>} />
+          <Route path="/confirm-trip" element={<PrivateRoute><ConfirmTrip /></PrivateRoute>} />
           <Route path="/notifications" element={<PrivateRoute><Notifications /></PrivateRoute>} />
           <Route path="/payment-methods" element={<PrivateRoute><PaymentMethods /></PrivateRoute>} />
           <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
@@ -63,8 +65,6 @@ function App() {
           <Route path="/admin/notifications" element={<PrivateRoute adminOnly><AdminNotifications /></PrivateRoute>} />
           <Route path="/admin/trips/new" element={<PrivateRoute adminOnly><AdminTripForm /></PrivateRoute>} />
           <Route path="/admin/trips/:id/edit" element={<PrivateRoute adminOnly><AdminTripForm /></PrivateRoute>} />
-          <Route path="/trip/:id" element={<PrivateRoute><TripDetails /></PrivateRoute>} />
-          <Route path="/trip/:id/details" element={<PrivateRoute><TripDetailsView /></PrivateRoute>} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </Router>

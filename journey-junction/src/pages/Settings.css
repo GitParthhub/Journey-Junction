@@ -69,9 +69,9 @@
   margin-bottom: 48px;
   padding: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 24px;
-  flex-wrap: wrap;
 }
 
 .btn-back-settings {
@@ -85,7 +85,7 @@
   cursor: pointer;
   transition: all 0.3s ease;
   white-space: nowrap;
-  flex-shrink: 0;
+  align-self: flex-start;
 }
 
 .btn-back-settings:hover {
@@ -115,16 +115,16 @@
   -webkit-text-fill-color: transparent;
   background-clip: text;
   letter-spacing: -0.5px;
-  flex: 1;
-  min-width: 200px;
+  text-align: center;
+  margin: 0;
 }
 
 .settings-header p {
   font-size: 1.2rem;
   color: #cbd5e1;
-  width: 100%;
   line-height: 1.6;
-  align-content: center;
+  text-align: center;
+  margin: 0;
 }
 
 .settings-page.theme-light .settings-header p {
