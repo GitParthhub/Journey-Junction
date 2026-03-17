@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { tripAPI, reviewAPI } from '../services/api';
+import { tripAPI, reviewAPI, adminAPI } from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
@@ -13,6 +13,8 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [allReviews, setAllReviews] = useState([]);
   const [showReviewsModal, setShowReviewsModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [tripToDelete, setTripToDelete] = useState(null);
   const [featuredTrips, setFeaturedTrips] = useState([]);
   const [featuredImageIndex, setFeaturedImageIndex] = useState({});
   const [featuredTransitioning, setFeaturedTransitioning] = useState({});
@@ -224,6 +226,33 @@ const Dashboard = () => {
         alert('Failed to delete trip. Please try again.');
       }
     }
+  };
+
+  const handleDeleteFeaturedTrip = async (id) => {
+    setTripToDelete(id);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      if (user?.role === 'admin') {
+        await adminAPI.deleteTrip(tripToDelete);
+      } else {
+        await tripAPI.deleteTrip(tripToDelete);
+      }
+      fetchFeaturedTrips();
+      fetchTrips();
+      setShowDeleteModal(false);
+      setTripToDelete(null);
+    } catch (error) {
+      console.error('Error deleting featured trip:', error);
+      alert('❌ Failed to delete trip package. Please try again.');
+    }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
+    setTripToDelete(null);
   };
 
   const getImageForTrip = (trip, index) => {
@@ -488,10 +517,14 @@ const Dashboard = () => {
 
                       <div className="db-featured-actions">
                         <button className="db-btn-details" onClick={() => navigate(`/trip/${trip._id}/details`)}>👁️ View Details</button>
-                        {user?.role === 'admin'
-                          ? <button className="db-btn-book" onClick={() => navigate(`/admin/trips/${trip._id}/edit`)}>✏️ Edit Trip</button>
-                          : <button className="db-btn-book" onClick={() => navigate('/confirm-trip', { state: { tripData: { tripTitle: trip.title, destination: trip.destination, basePrice: trip.basePrice || trip.budget, currency: trip.currency || 'INR', image: getFeaturedImage(trip), duration: trip.duration, category: trip.category, tripId: trip._id } } })}>🏷️ Book This Trip</button>
-                        }
+                        {user?.role === 'admin' ? (
+                          <>
+                            <button className="db-btn-book" onClick={() => navigate(`/admin/trips/${trip._id}/edit`)}>✏️ Edit Trip</button>
+                            <button className="db-btn-delete" onClick={() => handleDeleteFeaturedTrip(trip._id)}>🗑️ Delete</button>
+                          </>
+                        ) : (
+                          <button className="db-btn-book" onClick={() => navigate('/confirm-trip', { state: { tripData: { tripTitle: trip.title, destination: trip.destination, basePrice: trip.basePrice || trip.budget, currency: trip.currency || 'INR', image: getFeaturedImage(trip), duration: trip.duration, category: trip.category, tripId: trip._id } } })}>🏷️ Book This Trip</button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -730,6 +763,40 @@ const Dashboard = () => {
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="modal-overlay" onClick={cancelDelete}>
+          <div className="modal-content delete-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header delete-header">
+              <h2>⚠️ Delete Trip Package</h2>
+              <button className="modal-close" onClick={cancelDelete}>×</button>
+            </div>
+            <div className="modal-body">
+              <div className="delete-warning">
+                <div className="warning-icon">🚨</div>
+                <div className="warning-content">
+                  <h3>Are you sure you want to delete this featured trip package?</h3>
+                  <p>This action cannot be undone and will remove the trip from all users who may have booked it.</p>
+                  <ul className="warning-list">
+                    <li>• All user bookings will be affected</li>
+                    <li>• Trip data will be permanently deleted</li>
+                    <li>• This action cannot be reversed</li>
+                  </ul>
+                </div>
+              </div>
+              <div className="delete-actions">
+                <button className="btn-cancel" onClick={cancelDelete}>
+                  ❌ Cancel
+                </button>
+                <button className="btn-confirm-delete" onClick={confirmDelete}>
+                  🗑️ Delete Package
+                </button>
+              </div>
             </div>
           </div>
         </div>

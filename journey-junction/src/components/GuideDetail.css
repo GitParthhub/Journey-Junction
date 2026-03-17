@@ -300,3 +300,123 @@
   .gd-title { font-size: 18px; }
   .gd-header { height: 220px; }
 }
+/* Enhanced Guide Detail Styles */
+.gd-intro-section {
+  margin-bottom: 32px;
+  padding: 24px;
+  background: linear-gradient(135deg, rgba(0, 121, 140, 0.05) 0%, rgba(48, 99, 142, 0.05) 100%);
+  border-radius: 16px;
+  border-left: 4px solid #00798C;
+}
+
+.gd-intro-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #00798C;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gd-intro {
+  font-size: 1.1rem;
+  line-height: 1.7;
+  color: #374151;
+  margin: 0;
+}
+
+.gd-content-sections {
+  margin-bottom: 40px;
+}
+
+.gd-content-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1a202c;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.gd-section {
+  margin-bottom: 28px;
+  padding: 20px;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.gd-section:hover {
+  box-shadow: 0 4px 16px rgba(0, 121, 140, 0.1);
+  border-color: #00798C;
+}
+
+.gd-section-heading {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #00798C;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gd-section-body {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #4b5563;
+  margin: 0;
+}
+
+/* Enhanced meta display */
+.gd-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.gd-meta span {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 4px 12px;
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+  .gd-intro-section {
+    padding: 20px;
+  }
+  
+  .gd-section {
+    padding: 16px;
+  }
+  
+  .gd-intro-title,
+  .gd-content-title {
+    font-size: 1.2rem;
+  }
+  
+  .gd-section-heading {
+    font-size: 1.1rem;
+  }
+  
+  .gd-meta {
+    gap: 8px;
+  }
+  
+  .gd-meta span {
+    font-size: 12px;
+    padding: 3px 8px;
+  }
+}
