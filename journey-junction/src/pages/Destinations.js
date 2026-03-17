@@ -11,25 +11,28 @@ const Destinations = () => {
       
       {/* Hero Section */}
       <div className="destinations-hero">
-        <div className="destinations-hero-bg" style={{ backgroundImage: `url(/images/background.jpg)` }}></div>
+        <div className="destinations-hero-bg" style={{ backgroundImage: `url(/images/photo-1476514525535-07fb3b4ae5f1.avif)` }}></div>
         <div className="destinations-hero-overlay"></div>
         <div className="destinations-hero-content">
-          <h1 className="destinations-hero-title">Explore the World</h1>
+          <span className="destinations-eyebrow">🌍 Explore the World</span>
+          <h1 className="destinations-hero-title">Find Your Next<br />Adventure</h1>
           <p className="destinations-hero-subtitle">
-            Discover breathtaking destinations and plan your perfect getaway
+            Handpicked destinations curated by travel experts — from Himalayan peaks to tropical shores
           </p>
           <div className="destinations-hero-stats">
             <div className="hero-stat">
-              <span className="stat-number">150+</span>
-              <span className="stat-label">Destinations</span>
+              <strong>150+</strong>
+              <span>Destinations</span>
             </div>
+            <div className="hero-stat-divider"></div>
             <div className="hero-stat">
-              <span className="stat-number">50+</span>
-              <span className="stat-label">Countries</span>
+              <strong>50+</strong>
+              <span>Countries</span>
             </div>
+            <div className="hero-stat-divider"></div>
             <div className="hero-stat">
-              <span className="stat-number">10k+</span>
-              <span className="stat-label">Happy Travelers</span>
+              <strong>10k+</strong>
+              <span>Happy Travelers</span>
             </div>
           </div>
         </div>
@@ -69,21 +72,27 @@ const Destinations = () => {
 
       {/* Call to Action Section */}
       <div className="destinations-cta">
-        <div className="cta-container">
-          <div className="cta-content">
-            <h2>Ready to Start Your Adventure?</h2>
-            <p>Join thousands of travelers who have discovered their dream destinations with us.</p>
+        <div className="cta-inner">
+          <div className="cta-left">
+            <img src="/images/photo-1476514525535-07fb3b4ae5f1.avif" alt="Travel Adventure" className="cta-img" />
+          </div>
+          <div className="cta-right">
+            <span className="cta-badge">✈️ Start Exploring</span>
+            <h2 className="cta-title">Ready to Start Your Adventure?</h2>
+            <p className="cta-desc">Join thousands of travelers who have discovered their dream destinations with Journey Junction.</p>
+            <ul className="cta-perks">
+              <li>🗺️ Personalised trip planning</li>
+              <li>💰 Best price guarantee</li>
+              <li>🛡️ 24/7 travel support</li>
+            </ul>
             <div className="cta-buttons">
               <button className="cta-btn primary" onClick={() => window.location.href = '/plan-trip'}>
-                🗺️ Plan Your Trip
+                Plan Your Trip
               </button>
               <button className="cta-btn secondary" onClick={() => window.location.href = '/featured'}>
-                ⭐ View Featured Trips
+                View Featured Trips
               </button>
             </div>
-          </div>
-          <div className="cta-image">
-            <img src="/images/photo-1476514525535-07fb3b4ae5f1.avif" alt="Travel Adventure" />
           </div>
         </div>
       </div>

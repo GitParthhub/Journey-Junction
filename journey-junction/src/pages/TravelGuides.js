@@ -12,13 +12,13 @@ const guides = [
     category: 'Adventure',
     emoji: '🏔️',
     readTime: '18 min read',
-    image: '/images/himalaya/him2.jpeg',
+    image: 'http://localhost:5000/images/himalaya/him2.jpeg',
     galleryImages: [
-      '/images/himalaya/him2.jpeg',
-      '/images/himalaya/hampta.jpeg',
-      '/images/himalaya/valley.jpg',
-      '/images/himalaya/triund.jpeg',
-      '/images/himalaya/him3.jpg'
+      'http://localhost:5000/images/himalaya/him2.jpeg',
+      'http://localhost:5000/images/himalaya/hampta.jpeg',
+      'http://localhost:5000/images/himalaya/valley.jpg',
+      'http://localhost:5000/images/himalaya/triund.jpeg',
+      'http://localhost:5000/images/himalaya/him3.jpg'
     ],
     excerpt: 'Your complete guide to the 7-day Himalaya Adventure Trek from Manali to Chandratal Lake. Includes Hampta Pass crossing, camping tips, and essential preparation.',
     tags: ['Himalaya', 'Hampta Pass', 'Chandratal'],
@@ -52,13 +52,13 @@ const guides = [
     category: 'Adventure',
     emoji: '🏜️',
     readTime: '16 min read',
-    image: '/images/himalaya/valley.jpg',
+    image: 'http://localhost:5000/images/himalaya/valley.jpg',
     galleryImages: [
-      '/images/himalaya/valley.jpg',
-      '/images/himalaya/him4.jpeg',
-      '/images/himalaya/kedar.png',
-      '/images/himalaya/bhamhatal.jpeg',
-      '/images/himalaya/him3.jpg'
+      'http://localhost:5000/images/himalaya/valley.jpg',
+      'http://localhost:5000/images/himalaya/him4.jpeg',
+      'http://localhost:5000/images/himalaya/kedar.png',
+      'http://localhost:5000/images/himalaya/bhamhatal.jpeg',
+      'http://localhost:5000/images/himalaya/him3.jpg'
     ],
     excerpt: 'Discover the mystical land of Ladakh with high-altitude lakes, ancient monasteries, and dramatic landscapes. Complete guide to planning your Ladakh adventure.',
     tags: ['Ladakh', 'High Altitude', 'Monasteries'],
@@ -92,13 +92,13 @@ const guides = [
     category: 'Cultural',
     emoji: '🏛️',
     readTime: '12 min read',
-    image: '/images/rajasthan/rajasthan1.jpeg',
+    image: 'http://localhost:5000/images/rajasthan/rajasthan1.jpeg',
     galleryImages: [
-      '/images/rajasthan/rajasthan1.jpeg',
-      '/images/rajasthan/h71soQPJS_ZzkQ9GduAHl4Go_e7gUqPKZ_-UfjpCoWrH1Wu8zpILpQ1m9UgTVLElKaLVCHxbHJtI9_O7_hs1x2Vj4QWUJJSllgWNJ6kBJHM.jpeg',
-      '/images/rajasthan/-zgcUxh4KMeyquudTNwFqaJ7SIxIa6eW7PutoEOk2jZuL-nFeMwxWoHgp9e6kJi7LrLMmtDtAK1Eaw6QdTZIvSXidZYu8nRvKQ1NrmBvi0w.jpeg',
-      '/images/rajasthan/kc997oKX_Rfk8Xlbg21RfRlKF0m3DjmiYfDY0Iq2lAQQdjuND3yVLTEtHp7hv100dxzWq_8_BvYHvZy3HpVfSB3sCP2_AswPnnGv5XIlEM8.jpeg',
-      '/images/rajasthan/mJhhnB4vUqAFJ2OYJRHS3LlL391K-PVwZVcpVSqYHQMxrZzhIBHVBcBsTxWuoTD4jymZBSv_1UG95Su0f3T3Roq9516gFbgr6BaYKeM7fq4.jpeg'
+      'http://localhost:5000/images/rajasthan/rajasthan1.jpeg',
+      'http://localhost:5000/images/rajasthan/h71soQPJS_ZzkQ9GduAHl4Go_e7gUqPKZ_-UfjpCoWrH1Wu8zpILpQ1m9UgTVLElKaLVCHxbHJtI9_O7_hs1x2Vj4QWUJJSllgWNJ6kBJHM.jpeg',
+      'http://localhost:5000/images/rajasthan/-zgcUxh4KMeyquudTNwFqaJ7SIxIa6eW7PutoEOk2jZuL-nFeMwxWoHgp9e6kJi7LrLMmtDtAK1Eaw6QdTZIvSXidZYu8nRvKQ1NrmBvi0w.jpeg',
+      'http://localhost:5000/images/rajasthan/kc997oKX_Rfk8Xlbg21RfRlKF0m3DjmiYfDY0Iq2lAQQdjuND3yVLTEtHp7hv100dxzWq_8_BvYHvZy3HpVfSB3sCP2_AswPnnGv5XIlEM8.jpeg',
+      'http://localhost:5000/images/rajasthan/mJhhnB4vUqAFJ2OYJRHS3LlL391K-PVwZVcpVSqYHQMxrZzhIBHVBcBsTxWuoTD4jymZBSv_1UG95Su0f3T3Roq9516gFbgr6BaYKeM7fq4.jpeg'
     ],
     excerpt: 'Explore the royal palaces, majestic forts, and vibrant culture of Rajasthan. From Jaipur\'s Pink City to Udaipur\'s lakes - your complete cultural journey.',
     tags: ['Rajasthan', 'Heritage', 'Culture'],

@@ -606,107 +606,54 @@ const Dashboard = () => {
           ) : (
             <div className="trips-grid">
               {filteredTrips.slice(0, 6).map((trip, index) => (
-                <div key={trip._id} className={`trip-card-new ${trip.status || 'planned'} ${trip.isFeatured ? 'featured-trip' : ''}`}>
-                  <div className="trip-card-header">
-                    <div className="trip-image-wrapper">
-                      <img 
-                        src={getImageForTrip(trip, index)} 
-                        alt={trip.title}
-                        className="trip-image-new"
-                        onError={(e) => {
-                          e.target.src = defaultImages[0];
-                        }}
-                      />
-                      <div className="trip-overlay">
-                        <div className="trip-badges">
-                          <div className={`status-badge ${trip.status || 'planned'}`}>
-                            {(trip.status || 'Planned').charAt(0).toUpperCase() + (trip.status || 'planned').slice(1)}
-                          </div>
-                          {trip.isFeatured && (
-                            <div className="featured-star">
-                              ⭐
-                            </div>
-                          )}
-                        </div>
-                        <div className="trip-quick-actions">
-                          <button 
-                            onClick={() => navigate(`/trip/${trip._id}/edit`)} 
-                            className="quick-action-btn edit-btn"
-                            title="Edit Trip"
-                          >
-                            ✏️
-                          </button>
-                          <button 
-                            onClick={() => openTripDetails(trip)} 
-                            className="quick-action-btn details-btn"
-                            title="View Details"
-                          >
-                            👁️
-                          </button>
-                        </div>
-                      </div>
+                <div key={trip._id} className={`my-trip-card ${trip.status || 'planned'}`}>
+                  {/* Image */}
+                  <div className="my-trip-img-wrap">
+                    <img
+                      src={getImageForTrip(trip, index)}
+                      alt={trip.title}
+                      className="my-trip-img"
+                      onError={e => { e.target.src = defaultImages[0]; }}
+                    />
+                    <div className={`my-trip-status-ribbon ${trip.status || 'planned'}`}>
+                      {(trip.status || 'planned').charAt(0).toUpperCase() + (trip.status || 'planned').slice(1)}
                     </div>
+                    {trip.isFeatured && <div className="my-trip-featured-badge">⭐ Featured</div>}
                   </div>
-                  
-                  <div className="trip-card-body">
-                    <div className="trip-header-info">
-                      <h3 className="trip-title-new">{trip.title}</h3>
-                      <div className="trip-destination-new">
-                        <span className="location-icon">📍</span>
-                        {trip.destinationCity && trip.destinationCountry 
-                          ? `${trip.destinationCity}, ${trip.destinationCountry}` 
-                          : trip.destination || 'Destination TBD'
-                        }
-                      </div>
-                    </div>
-                    
-                    <p className="trip-description-new">
-                      {trip.shortDescription || (trip.description && trip.description.length > 120 ? trip.description.substring(0, 120) + '...' : trip.description) || (trip.detailedDescription && trip.detailedDescription.length > 120 ? trip.detailedDescription.substring(0, 120) + '...' : trip.detailedDescription) || 'Experience an amazing adventure with breathtaking views and unforgettable memories.'}
-                    </p>
-                    
-                    <div className="trip-details-grid">
-                      <div className="detail-item">
-                        <div className="detail-icon">⏱️</div>
-                        <div className="detail-content">
-                          <span className="detail-label">Duration</span>
-                          <span className="detail-value">
-                            {trip.startDate && trip.endDate 
-                              ? formatDateRange(trip.startDate, trip.endDate)
-                              : trip.duration?.days 
-                                ? `${trip.duration.days} days`
-                                : 'Flexible'
-                            }
-                          </span>
+
+                  {/* Body */}
+                  <div className="my-trip-body">
+                    <h3 className="my-trip-title">{trip.title}</h3>
+                    <div className="my-trip-dest">📍 {trip.destinationCity && trip.destinationCountry ? `${trip.destinationCity}, ${trip.destinationCountry}` : trip.destination || 'Destination TBD'}</div>
+
+                    <div className="my-trip-meta">
+                      <div className="my-trip-meta-item">
+                        <span className="my-trip-meta-icon">📅</span>
+                        <div>
+                          <div className="my-trip-meta-label">Dates</div>
+                          <div className="my-trip-meta-val">{trip.startDate && trip.endDate ? formatDateRange(trip.startDate, trip.endDate) : trip.duration?.days ? `${trip.duration.days} days` : 'Flexible'}</div>
                         </div>
                       </div>
-                      
-                      <div className="detail-item">
-                        <div className="detail-icon">💰</div>
-                        <div className="detail-content">
-                          <span className="detail-label">Budget</span>
-                          <span className="detail-value">
-                            {formatBudget(trip)}
-                          </span>
+                      <div className="my-trip-meta-item">
+                        <span className="my-trip-meta-icon">💰</span>
+                        <div>
+                          <div className="my-trip-meta-label">Budget</div>
+                          <div className="my-trip-meta-val">{formatBudget(trip)}</div>
                         </div>
                       </div>
                     </div>
-                    
-                    <div className="trip-card-footer">
-                      <div className="trip-actions-new">
-                        <button 
-                          onClick={() => openTripDetails(trip)} 
-                          className="btn-primary-new"
-                        >
-                          <span className="btn-icon">👁️</span>
-                          View Details
-                        </button>
-                        <button 
-                          onClick={() => handleDelete(trip._id)} 
-                          className="btn-danger-new"
-                        >
-                          <span className="btn-icon">🗑️</span>
-                        </button>
+
+                    {trip.activities?.length > 0 && (
+                      <div className="my-trip-tags">
+                        {trip.activities.slice(0, 3).map((a, i) => <span key={i} className="my-trip-tag">{a.trim()}</span>)}
+                        {trip.activities.length > 3 && <span className="my-trip-tag-more">+{trip.activities.length - 3}</span>}
                       </div>
+                    )}
+
+                    <div className="my-trip-actions">
+                      <button className="my-trip-btn-view" onClick={() => openTripDetails(trip)}>👁️ View</button>
+                      <button className="my-trip-btn-edit" onClick={() => navigate(`/trip/${trip._id}/edit`)}>✏️ Edit</button>
+                      <button className="my-trip-btn-del" onClick={() => handleDelete(trip._id)}>🗑️</button>
                     </div>
                   </div>
                 </div>

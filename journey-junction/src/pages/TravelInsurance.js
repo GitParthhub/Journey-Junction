@@ -1,4 +1,6 @@
-import React from 'react';
+import React, { useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import './InfoPages.css';
@@ -8,6 +10,7 @@ const plans = [
     icon: '🌱',
     name: 'Basic',
     price: '₹499',
+    amount: 499,
     per: '/ trip',
     features: [
       'Medical emergency cover up to ₹5 Lakh',
@@ -21,6 +24,7 @@ const plans = [
     icon: '🌟',
     name: 'Standard',
     price: '₹999',
+    amount: 999,
     per: '/ trip',
     popular: true,
     features: [
@@ -37,6 +41,7 @@ const plans = [
     icon: '💎',
     name: 'Premium',
     price: '₹1,999',
+    amount: 1999,
     per: '/ trip',
     features: [
       'Medical emergency cover up to ₹1 Crore',
@@ -60,64 +65,105 @@ const coverageItems = [
   { icon: '🚁', title: 'Emergency Evacuation', desc: 'Air ambulance and emergency evacuation to the nearest suitable medical facility.' },
 ];
 
-const TravelInsurance = () => (
-  <div className="info-page">
-    <Navbar />
-    <div className="info-hero">
-      <div>
-        <div className="info-hero-icon">🛡️</div>
-        <h1>Travel Insurance</h1>
-        <p>Travel worry-free with comprehensive coverage for every adventure</p>
-      </div>
-    </div>
+const TravelInsurance = () => {
+  const navigate = useNavigate();
+  const { user } = useContext(AuthContext);
 
-    <div className="info-container">
-      <div className="info-alert">
-        <div className="info-alert-icon">⚠️</div>
-        <div>
-          <h3>Why Travel Insurance Matters</h3>
-          <p>
-            Medical emergencies abroad can cost ₹10–50 Lakh. A single trip cancellation can mean losing your entire booking amount.
-            Journey Junction partners with IRDAI-registered insurers to offer you reliable, affordable coverage — starting at just ₹499.
-          </p>
+  const handleGetPlan = (plan) => {
+    navigate('/payment-methods', {
+      state: {
+        tripData: {
+          tripTitle: `${plan.name} Travel Insurance Plan`,
+          destination: 'Travel Insurance',
+          basePrice: plan.amount,
+          currency: 'INR',
+          image: '/images/photo-1476514525535-07fb3b4ae5f1.avif',
+          category: 'insurance',
+          planName: plan.name,
+          planFeatures: plan.features,
+          isInsurance: true,
+        }
+      }
+    });
+  };
+
+  return (
+    <div className="info-page">
+      <Navbar />
+      <div className="info-hero">
+        <div className="info-hero-inner">
+          <span className="info-hero-eyebrow">🛡️ Coverage</span>
+          <h1>Travel Insurance</h1>
+          <p>Travel worry-free with comprehensive coverage for every adventure</p>
         </div>
       </div>
 
-      <h2 className="info-section-title">Choose Your Plan</h2>
-      <div className="insurance-plans">
-        {plans.map((p, i) => (
-          <div className={`insurance-plan ${p.popular ? 'popular' : ''}`} key={i}>
-            {p.popular && <div className="plan-badge">⭐ Most Popular</div>}
-            <div className="plan-icon">{p.icon}</div>
-            <div className="plan-name">{p.name}</div>
-            <div className="plan-price">{p.price} <span>{p.per}</span></div>
-            <ul className="plan-features">
-              {p.features.map((f, j) => <li key={j}>{f}</li>)}
-            </ul>
-            <button className="plan-btn">Get {p.name} Plan</button>
+      <div className="info-container">
+        <div className="info-alert">
+          <div className="info-alert-icon">⚠️</div>
+          <div>
+            <h3>Why Travel Insurance Matters</h3>
+            <p>
+              Medical emergencies abroad can cost ₹10–50 Lakh. A single trip cancellation can mean losing your entire booking amount.
+              Journey Junction partners with IRDAI-registered insurers to offer you reliable, affordable coverage — starting at just ₹499.
+            </p>
           </div>
-        ))}
-      </div>
+        </div>
 
-      <h2 className="info-section-title">What's Covered</h2>
-      <div className="info-cards-grid">
-        {coverageItems.map((c, i) => (
-          <div className="info-card" key={i}>
-            <div className="info-card-icon">{c.icon}</div>
-            <h3>{c.title}</h3>
-            <p>{c.desc}</p>
+        <div className="hc-section">
+          <div className="hc-section-header">
+            <h2 className="hc-section-title">Choose Your Plan</h2>
+            <p className="hc-section-sub">Select the coverage that best fits your travel needs</p>
           </div>
-        ))}
-      </div>
+          <div className="insurance-plans">
+            {plans.map((p, i) => (
+              <div className={`insurance-plan ${p.popular ? 'popular' : ''}`} key={i}>
+                {p.popular && <div className="plan-badge">⭐ Most Popular</div>}
+                <div className="plan-icon">{p.icon}</div>
+                <div className="plan-name">{p.name}</div>
+                <div className="plan-price">{p.price} <span>{p.per}</span></div>
+                <ul className="plan-features">
+                  {p.features.map((f, j) => <li key={j}>{f}</li>)}
+                </ul>
+                <button className="plan-btn" onClick={() => handleGetPlan(p)}>
+                  Get {p.name} Plan
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
 
-      <div className="info-cta">
-        <h2>Ready to Travel Safe?</h2>
-        <p>Add insurance when planning your next trip — it takes less than 2 minutes.</p>
-        <a href="/plan-trip" className="info-cta-btn">Plan a Trip →</a>
+        <div className="hc-section">
+          <div className="hc-section-header">
+            <h2 className="hc-section-title">What's Covered</h2>
+            <p className="hc-section-sub">Comprehensive protection across all major travel risks</p>
+          </div>
+          <div className="info-cards-grid">
+            {coverageItems.map((c, i) => (
+              <div className="info-card" key={i}>
+                <div className="info-card-icon">{c.icon}</div>
+                <h3>{c.title}</h3>
+                <p>{c.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="info-cta">
+          <div className="info-cta-inner">
+            <div>
+              <h2>Ready to Travel Safe?</h2>
+              <p>Add insurance when planning your next trip — it takes less than 2 minutes.</p>
+            </div>
+            <button className="info-cta-btn" onClick={() => navigate('/plan-trip')}>
+              Plan a Trip →
+            </button>
+          </div>
+        </div>
       </div>
+      <Footer />
     </div>
-    <Footer />
-  </div>
-);
+  );
+};
 
 export default TravelInsurance;

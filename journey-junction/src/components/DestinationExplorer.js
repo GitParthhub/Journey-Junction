@@ -21,8 +21,15 @@ const DestinationExplorer = () => {
       description: "A stunning Greek island known for its white-washed buildings, blue-domed churches, and breathtaking sunsets.",
       highlights: ["Iconic blue-domed churches", "Spectacular sunset views", "Volcanic beaches", "Traditional Greek cuisine"],
       images: {
-        hero: "/images/paris.webp",
-        gallery: ["/images/paris.webp", "/images/paris-2.jpg", "/images/paris-4.jpeg", "/images/montmartre.jpeg"]
+        hero: 'http://localhost:5000/images/santroni/cover.jpeg',
+        gallery: [
+          'http://localhost:5000/images/santroni/cover.jpeg',
+          'http://localhost:5000/images/santroni/1.jpeg',
+          'http://localhost:5000/images/santroni/2.jpeg',
+          'http://localhost:5000/images/santroni/3.jpeg',
+          'http://localhost:5000/images/santroni/4.jpeg',
+          'http://localhost:5000/images/santroni/5.jpeg'
+        ]
       },
       bestTimeToVisit: {
         months: ["April", "May", "September", "October"],
@@ -52,8 +59,16 @@ const DestinationExplorer = () => {
       description: "Tropical paradise with ancient temples, lush rice terraces, and pristine beaches.",
       highlights: ["Ancient temples", "Rice terraces", "Beach resorts", "Cultural experiences"],
       images: {
-        hero: "/images/bali.webp",
-        gallery: ["/images/bali.webp", "/images/bali-2.jpg", "/images/bali-3.jpg", "/images/ubud-bali.jpg"]
+        hero: 'http://localhost:5000/images/bali/bali.webp',
+        gallery: [
+          'http://localhost:5000/images/bali/bali.webp',
+          'http://localhost:5000/images/bali/bali-2.jpg',
+          'http://localhost:5000/images/bali/bali-3.jpg',
+          'http://localhost:5000/images/bali/ubud-bali.jpg',
+          'http://localhost:5000/images/bali/kutabeach.jpeg',
+          'http://localhost:5000/images/bali/uluwatutemple.jpeg',
+          'http://localhost:5000/images/bali/nusapenida.jpeg'
+        ]
       },
       bestTimeToVisit: {
         months: ["April", "May", "June", "July", "August", "September"],
@@ -83,8 +98,16 @@ const DestinationExplorer = () => {
       description: "Hill station in the Himalayas offering adventure sports, scenic beauty, and mountain culture.",
       highlights: ["Mountain trekking", "Adventure sports", "Snow activities", "Local culture"],
       images: {
-        hero: "/images/him2.jpeg",
-        gallery: ["/images/him2.jpeg", "/images/him3.jpg", "/images/him4.jpeg", "/images/triund.jpeg"]
+        hero: 'http://localhost:5000/images/himalaya/him2.jpeg',
+        gallery: [
+          'http://localhost:5000/images/himalaya/him2.jpeg',
+          'http://localhost:5000/images/himalaya/him3.jpg',
+          'http://localhost:5000/images/himalaya/him4.jpeg',
+          'http://localhost:5000/images/himalaya/hampta.jpeg',
+          'http://localhost:5000/images/himalaya/triund.jpeg',
+          'http://localhost:5000/images/himalaya/valley.jpg',
+          'http://localhost:5000/images/himalaya/bhamhatal.jpeg'
+        ]
       },
       bestTimeToVisit: {
         months: ["March", "April", "May", "June", "October", "November"],
