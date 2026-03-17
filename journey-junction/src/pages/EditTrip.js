@@ -59,6 +59,10 @@ const EditTrip = () => {
     accessibilityNeeds: '',
     celebrationType: '',
     specialNotes: '',
+    
+    // Media Gallery
+    mediaFiles: [],
+    
     passportCopy: null,
     idProof: null,
     visaDocument: null,
@@ -131,6 +135,68 @@ const EditTrip = () => {
     }
   };
 
+  const handleMediaUpload = (e) => {
+    const files = Array.from(e.target.files);
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    const validFiles = [];
+    
+    files.forEach(file => {
+      if (file.size > maxSize) {
+        alert(`File ${file.name} is too large. Maximum size is 10MB.`);
+        return;
+      }
+      
+      const fileWithPreview = {
+        file: file,
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        preview: URL.createObjectURL(file)
+      };
+      
+      validFiles.push(fileWithPreview);
+    });
+    
+    setFormData(prev => ({
+      ...prev,
+      mediaFiles: [...(prev.mediaFiles || []), ...validFiles]
+    }));
+  };
+
+  const handleCameraCapture = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.capture = 'environment';
+    input.onchange = (e) => {
+      handleMediaUpload(e);
+    };
+    input.click();
+  };
+
+  const removeMediaFile = (index) => {
+    setFormData(prev => {
+      const newMediaFiles = [...prev.mediaFiles];
+      URL.revokeObjectURL(newMediaFiles[index].preview);
+      newMediaFiles.splice(index, 1);
+      return {
+        ...prev,
+        mediaFiles: newMediaFiles
+      };
+    });
+  };
+
+  const clearMediaFiles = () => {
+    formData.mediaFiles?.forEach(file => {
+      URL.revokeObjectURL(file.preview);
+    });
+    
+    setFormData(prev => ({
+      ...prev,
+      mediaFiles: []
+    }));
+  };
+
   const calculateDuration = () => {
     if (formData.startDate && formData.endDate) {
       const start = new Date(formData.startDate);
@@ -157,50 +223,99 @@ const EditTrip = () => {
         numberOfDestinations: parseInt(formData.numberOfDestinations) || 1
       };
 
-      await tripAPI.updateTrip(id, updatedData);
-
-      // Create notification for admin about the update
-      try {
-        await fetch('/api/notifications', {
-          method: 'POST',
+      // Use appropriate API endpoint based on user role
+      let response;
+      if (user?.role === 'admin') {
+        response = await fetch(`http://localhost:5000/api/admin/trips/${id}`, {
+          method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           },
-          body: JSON.stringify({
-            type: 'trip_request',
-            priority: 'medium',
-            title: `Trip Updated by ${user.name}`,
-            message: `${user.name} has updated their trip plan for "${formData.title}". Please review the changes.`,
-            customer: {
-              id: user._id,
-              name: user.name,
-              email: user.email,
-              phone: formData.mobileNumber
-            },
-            trip: {
-              id: id,
-              title: formData.title,
-              destination: `${formData.destinationCity}, ${formData.destinationCountry}`,
-              startDate: formData.startDate,
-              endDate: formData.endDate,
-              numberOfTravelers: formData.numberOfTravelers,
-              budgetRange: formData.budgetRange === 'Custom' ? `₹${formData.customBudget}` : formData.budgetRange,
-              tripType: formData.tripType
-            }
-          })
+          body: JSON.stringify(updatedData)
         });
-      } catch (notifError) {
-        console.error('Error creating notification:', notifError);
+      } else {
+        response = await fetch(`http://localhost:5000/api/trips/${id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify(updatedData)
+        });
       }
 
-      setSuccessMessage('✅ Trip updated successfully! Admin has been notified of your changes.');
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.message || result.error || 'Failed to update trip');
+      }
+
+      // Create notification for admin about the update (only for regular users)
+      if (user?.role !== 'admin') {
+        try {
+          await fetch('http://localhost:5000/api/notifications', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({
+              type: 'trip_request',
+              priority: 'medium',
+              title: `Trip Updated by ${user.name}`,
+              message: `${user.name} has updated their trip plan for "${formData.title}". Please review the changes.`,
+              customer: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                phone: formData.mobileNumber
+              },
+              trip: {
+                id: id,
+                title: formData.title,
+                destination: `${formData.destinationCity}, ${formData.destinationCountry}`,
+                startDate: formData.startDate,
+                endDate: formData.endDate,
+                numberOfTravelers: formData.numberOfTravelers,
+                budgetRange: formData.budgetRange === 'Custom' ? `₹${formData.customBudget}` : formData.budgetRange,
+                tripType: formData.tripType
+              }
+            })
+          });
+        } catch (notifError) {
+          console.error('Error creating notification:', notifError);
+        }
+      }
+
+      const successMsg = user?.role === 'admin' 
+        ? '✅ Trip updated successfully! Changes are now live.' 
+        : '✅ Trip updated successfully! Admin has been notified of your changes.';
+      
+      setSuccessMessage(successMsg);
+      
       setTimeout(() => {
         navigate(`/trip/${id}/details`);
       }, 2000);
     } catch (error) {
       console.error('Error updating trip:', error);
-      setErrorMessage(error.response?.data?.message || 'Error updating trip. Please try again.');
+      
+      // Handle different types of errors
+      let errorMsg = 'Error updating trip. Please try again.';
+      
+      if (error.message.includes('Validation error')) {
+        errorMsg = 'Please check your input data and try again.';
+      } else if (error.message.includes('Invalid data format')) {
+        errorMsg = 'Some data is in invalid format. Please check and try again.';
+      } else if (error.message.includes('Not authorized')) {
+        errorMsg = 'You are not authorized to update this trip.';
+      } else if (error.message.includes('Trip not found')) {
+        errorMsg = 'Trip not found. It may have been deleted.';
+      } else if (error.message) {
+        errorMsg = error.message;
+      }
+      
+      setErrorMessage(errorMsg);
     } finally {
       setSaving(false);
     }
@@ -834,9 +949,82 @@ const EditTrip = () => {
             </div>
           </div>
 
-          {/* 9. Document Upload */}
+          {/* 9. Media Gallery */}
+          <div className="form-section media-gallery-section">
+            <h2>9️⃣ Media Gallery</h2>
+            <p className="section-description">Upload photos and videos to showcase your trip preferences or inspiration images.</p>
+            
+            <div className="media-upload-container">
+              <div className="upload-area">
+                <div className="upload-zone" onClick={() => document.getElementById('mediaFiles').click()}>
+                  <div className="upload-icon">📸</div>
+                  <h3>Upload Photos & Videos</h3>
+                  <p>Drag and drop files here or click to browse</p>
+                  <span className="upload-formats">Supports: JPG, PNG, GIF, MP4, MOV (Max 10MB each)</span>
+                </div>
+                <input
+                  type="file"
+                  id="mediaFiles"
+                  name="mediaFiles"
+                  multiple
+                  accept="image/*,video/*"
+                  onChange={handleMediaUpload}
+                  style={{ display: 'none' }}
+                />
+              </div>
+              
+              <div className="media-actions">
+                <button type="button" className="btn-media-upload" onClick={() => document.getElementById('mediaFiles').click()}>
+                  <span className="btn-icon">🖼️</span>
+                  Choose Files
+                </button>
+                <button type="button" className="btn-media-camera" onClick={handleCameraCapture}>
+                  <span className="btn-icon">📷</span>
+                  Take Photo
+                </button>
+                <button type="button" className="btn-media-clear" onClick={clearMediaFiles}>
+                  <span className="btn-icon">🗑️</span>
+                  Clear All
+                </button>
+              </div>
+              
+              {formData.mediaFiles && formData.mediaFiles.length > 0 && (
+                <div className="media-preview">
+                  <h4>Uploaded Media ({formData.mediaFiles.length})</h4>
+                  <div className="media-grid">
+                    {formData.mediaFiles.map((file, index) => (
+                      <div key={index} className="media-item">
+                        {file.type.startsWith('image/') ? (
+                          <img src={file.preview} alt={`Upload ${index + 1}`} className="media-thumbnail" />
+                        ) : (
+                          <div className="video-thumbnail">
+                            <video src={file.preview} className="media-thumbnail" />
+                            <div className="video-overlay">▶️</div>
+                          </div>
+                        )}
+                        <div className="media-info">
+                          <span className="media-name">{file.name}</span>
+                          <span className="media-size">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
+                        </div>
+                        <button 
+                          type="button" 
+                          className="media-remove" 
+                          onClick={() => removeMediaFile(index)}
+                          title="Remove file"
+                        >
+                          ❌
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 10. Document Upload */}
           <div className="form-section">
-            <h2>9️⃣ Document Upload</h2>
+            <h2>🔟 Document Upload</h2>
             <p className="section-description">Optional but useful.</p>
             
             <div className="form-group">
@@ -876,9 +1064,9 @@ const EditTrip = () => {
             </div>
           </div>
 
-          {/* 10. Payment Information */}
+          {/* 11. Payment Information */}
           <div className="form-section">
-            <h2>🔟 Payment Information</h2>
+            <h2>🔢 Payment Information</h2>
             
             <div className="form-group">
               <label htmlFor="paymentMethod">Payment Method *</label>

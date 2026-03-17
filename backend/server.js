@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const connectDB = require('./config/db');
 
 const app = express();
@@ -10,6 +11,9 @@ connectDB();
 app.use(cors());
 app.use(express.json({ limit: '50mb' })); // Increase limit for image uploads
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Serve static files from images directory
+app.use('/images', express.static(path.join(__dirname, '../images')));
 
 // Add request logging middleware
 app.use((req, res, next) => {

@@ -1,9 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const { getAllTrips, getAllUsers, toggleFeaturedTrip, deleteUser, getStats, createTripAsAdmin, updateTripAsAdmin, deleteTripAsAdmin, getTripById, getTripApplicants, updateApplicantStatus, confirmTripWithPrice } = require('../controllers/adminController');
+const { getAllTrips, getAllUsers, toggleFeaturedTrip, deleteUser, getStats, createTripAsAdmin, updateTripAsAdmin, deleteTripAsAdmin, getTripById, getTripApplicants, updateApplicantStatus, confirmTripWithPrice, getTripsByStatus, updateTripStatus } = require('../controllers/adminController');
 const { getAllNotifications, markAsRead, markAllAsRead, deleteNotification, getNotificationStats } = require('../controllers/notificationController');
 const { getAllReviews } = require('../controllers/reviewController');
 const { auth, adminAuth } = require('../middleware/auth');
+
+// Trip status management
+router.get('/trips/by-status', auth, adminAuth, getTripsByStatus);
+router.patch('/trips/:id/status', auth, adminAuth, updateTripStatus);
 
 // Statistics and user management
 router.get('/trips', auth, adminAuth, getAllTrips);

@@ -131,17 +131,83 @@ exports.getTripById = async (req, res) => {
 
 exports.updateTrip = async (req, res) => {
   try {
+    console.log('Updating trip with ID:', req.params.id);
+    console.log('Update data:', req.body);
+    
     const trip = await Trip.findById(req.params.id);
-    if (!trip) return res.status(404).json({ message: 'Trip not found' });
+    if (!trip) {
+      console.log('Trip not found');
+      return res.status(404).json({ message: 'Trip not found' });
+    }
+    
+    // Check authorization
     if (trip.userId.toString() !== req.user.id && req.user.role !== 'admin') {
+      console.log('Not authorized to update trip');
       return res.status(403).json({ message: 'Not authorized' });
     }
 
-    Object.assign(trip, req.body);
+    // Update trip fields safely
+    const allowedFields = [
+      'title', 'destination', 'destinationCity', 'destinationCountry', 'description', 
+      'shortDescription', 'detailedDescription', 'startDate', 'endDate', 'budget', 
+      'customBudget', 'budgetRange', 'preferredCurrency', 'currency', 'basePrice',
+      'activities', 'category', 'status', 'isFeatured', 'duration', 'numberOfTravelers',
+      'tripType', 'accommodation', 'transportation', 'requirements', 'weather',
+      'notes', 'additionalInfo', 'highlights', 'itinerary', 'placesToVisit',
+      'includedServices', 'excludedServices', 'activitiesIncluded', 'images',
+      'galleryImages', 'image', 'coverImage', 'mainImage', 'bestPhotoIndex'
+    ];
+    
+    // Only update allowed fields that are present in request body
+    allowedFields.forEach(field => {
+      if (req.body.hasOwnProperty(field)) {
+        trip[field] = req.body[field];
+      }
+    });
+    
+    // Validate and save
     await trip.save();
-    res.json(trip);
+    
+    console.log('Trip updated successfully:', trip._id);
+    
+    // Return populated trip data
+    const updatedTrip = await Trip.findById(trip._id)
+      .populate('userId', 'name email')
+      .populate('applicants.userId', 'name email');
+    
+    res.json({ 
+      success: true,
+      message: 'Trip updated successfully',
+      trip: updatedTrip 
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error updating trip:', error);
+    
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      const validationErrors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({ 
+        success: false,
+        message: 'Validation error', 
+        errors: validationErrors 
+      });
+    }
+    
+    // Handle cast errors (invalid ObjectId, etc.)
+    if (error.name === 'CastError') {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Invalid data format', 
+        error: error.message 
+      });
+    }
+    
+    // Generic server error
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error while updating trip', 
+      error: error.message 
+    });
   }
 };
 

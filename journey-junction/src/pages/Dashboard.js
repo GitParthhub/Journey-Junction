@@ -13,22 +13,55 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [allReviews, setAllReviews] = useState([]);
   const [showReviewsModal, setShowReviewsModal] = useState(false);
-  const [currentImageIndex, setCurrentImageIndex] = useState({});
   const [featuredTrips, setFeaturedTrips] = useState([]);
+  const [featuredImageIndex, setFeaturedImageIndex] = useState({});
+  const [featuredTransitioning, setFeaturedTransitioning] = useState({});
+
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  // Using Bali images as default with fallbacks
+  // Selected 5 best Himalaya images for carousel
+  const himalayaCarouselImages = [
+    '/images/himalaya/him2.jpeg',
+    '/images/himalaya/him3.jpg',
+    '/images/himalaya/hampta.jpeg',
+    '/images/himalaya/triund.jpeg',
+    '/images/himalaya/valley.jpg'
+  ];
+
+  // Rajasthan cover photo for dashboard cards
+  const rajasthanCoverPhoto = '/images/rajasthan/rajasthan1.jpeg';
+
+  // Rajasthan royal heritage images - using actual uploaded images with Hawa Mahal as primary
+  const rajasthanImages = [
+    '/images/rajasthan/h71soQPJS_ZzkQ9GduAHl4Go_e7gUqPKZ_-UfjpCoWrH1Wu8zpILpQ1m9UgTVLElKaLVCHxbHJtI9_O7_hs1x2Vj4QWUJJSllgWNJ6kBJHM.jpeg', // Hawa Mahal - primary image
+    '/images/rajasthan/rajasthan1.jpeg',
+    '/images/rajasthan/-zgcUxh4KMeyquudTNwFqaJ7SIxIa6eW7PutoEOk2jZuL-nFeMwxWoHgp9e6kJi7LrLMmtDtAK1Eaw6QdTZIvSXidZYu8nRvKQ1NrmBvi0w.jpeg',
+    '/images/rajasthan/kc997oKX_Rfk8Xlbg21RfRlKF0m3DjmiYfDY0Iq2lAQQdjuND3yVLTEtHp7hv100dxzWq_8_BvYHvZy3HpVfSB3sCP2_AswPnnGv5XIlEM8.jpeg',
+    '/images/rajasthan/mJhhnB4vUqAFJ2OYJRHS3LlL391K-PVwZVcpVSqYHQMxrZzhIBHVBcBsTxWuoTD4jymZBSv_1UG95Su0f3T3Roq9516gFbgr6BaYKeM7fq4.jpeg'
+  ];
+
   const defaultImages = [
+    '/images/himalaya/him2.jpeg',
+    '/images/himalaya/him3.jpg', 
+    '/images/himalaya/him4.jpeg',
+    '/images/himalaya/valley.jpg',
     '/images/bali.webp',
-    '/images/bali-2.jpg', 
-    '/images/bali-3.jpg',
+    '/images/bali-2.jpg',
     '/images/ubud-bali.jpg'
   ];
 
-  const getImagesByDestination = (destination, category) => {
+  const getImagesByDestination = (destination, category, title) => {
     const dest = destination?.toLowerCase() || '';
     const cat = category?.toLowerCase() || '';
+    const tripTitle = title?.toLowerCase() || '';
+    
+    // Check for Rajasthan/Royal Heritage trips
+    if (dest.includes('rajasthan') || dest.includes('jaipur') || dest.includes('jodhpur') ||
+        dest.includes('jaisalmer') || dest.includes('udaipur') || tripTitle.includes('rajasthan') ||
+        tripTitle.includes('royal') || tripTitle.includes('heritage') || cat.includes('cultural')) {
+      return rajasthanImages;
+    }
     
     if (dest.includes('bali')) {
       return [
@@ -47,57 +80,50 @@ const Dashboard = () => {
       ];
     }
     
-    if (dest.includes('himalaya') || dest.includes('himachal') || dest.includes('triund') || dest.includes('hampta') || dest.includes('kedar') || dest.includes('bhamhatal')) {
+    // Enhanced Himalaya/Adventure Trek detection - using curated 5 images
+    if (dest.includes('himalaya') || dest.includes('himachal') || dest.includes('triund') || 
+        dest.includes('hampta') || dest.includes('kedar') || dest.includes('bhamhatal') ||
+        dest.includes('manali') || dest.includes('shimla') || dest.includes('dharamshala') ||
+        dest.includes('kasol') || dest.includes('tosh') || dest.includes('kheerganga') ||
+        cat.includes('trekking') || cat.includes('adventure') || dest.includes('mountain') || 
+        dest.includes('trek') || dest.includes('valley') || cat.includes('himalaya')) {
+      return himalayaCarouselImages;
+    }
+    
+    if (cat.includes('beach') || dest.includes('beach') || dest.includes('island')) {
       return [
-        '/images/himalaya/him2.avif',
-        '/images/himalaya/him3.avif',
-        '/images/himalaya/him4.jpg',
-        '/images/himalaya/hampta.jpg',
-        '/images/himalaya/bhamhatal.jpg'
+        '/images/bali/beach.jpeg',
+        '/images/bali/kutabeach.jpeg',
+        '/images/bali/nusapenida.jpeg'
       ];
     }
     
-    if (cat.includes('trekking') || cat.includes('adventure') || dest.includes('mountain') || dest.includes('trek')) {
-      return [
-        '/images/himalaya/him2.avif',
-        '/images/himalaya/him3.avif',
-        '/images/himalaya/him4.jpg',
-        '/images/himalaya/hampta.jpg',
-        '/images/himalaya/bhamhatal.jpg'
-      ];
-    }
-    
-    return defaultImages;
+    // Default to himalaya carousel for better visual experience
+    return himalayaCarouselImages;
   };
 
   useEffect(() => {
     fetchTrips();
-    if (user?.role === 'admin') {
-      fetchAllReviews();
-      fetchFeaturedTrips();
-    }
+    fetchFeaturedTrips();
+    if (user?.role === 'admin') fetchAllReviews();
   }, []);
 
-  // Refresh trips when returning to dashboard (e.g., after editing)
   useEffect(() => {
-    const handleFocus = () => {
-      fetchTrips();
-    };
-    
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        fetchTrips();
+    const intervals = {};
+    featuredTrips.forEach(trip => {
+      const images = getFeaturedImageSet(trip);
+      if (images.length > 1) {
+        intervals[trip._id] = setInterval(() => {
+          setFeaturedTransitioning(prev => ({ ...prev, [trip._id]: true }));
+          setTimeout(() => {
+            setFeaturedImageIndex(prev => ({ ...prev, [trip._id]: ((prev[trip._id] || 0) + 1) % images.length }));
+            setTimeout(() => setFeaturedTransitioning(prev => ({ ...prev, [trip._id]: false })), 50);
+          }, 250);
+        }, 4000);
       }
-    };
-    
-    window.addEventListener('focus', handleFocus);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, []);
+    });
+    return () => Object.values(intervals).forEach(clearInterval);
+  }, [featuredTrips]);
 
   const fetchTrips = async () => {
     try {
@@ -112,21 +138,66 @@ const Dashboard = () => {
     }
   };
 
+  const fetchFeaturedTrips = async () => {
+    try {
+      const { data } = await tripAPI.getFeaturedTrips();
+      setFeaturedTrips(data);
+    } catch (error) {
+      console.error('Error fetching featured trips:', error);
+    }
+  };
+
+  const getFeaturedImageSet = (trip) => {
+    if (trip.galleryImages && trip.galleryImages.length > 0) return trip.galleryImages;
+    if (trip.image) return [trip.image];
+    const dest = trip.destination?.toLowerCase() || '';
+    const cat = trip.category?.toLowerCase() || '';
+    const title = trip.title?.toLowerCase() || '';
+    if (dest.includes('rajasthan') || dest.includes('jaipur') || dest.includes('jodhpur') || dest.includes('udaipur') || title.includes('rajasthan'))
+      return ['/images/rajasthan/rajasthan1.jpeg'];
+    if (dest.includes('bali') || title.includes('bali'))
+      return ['/images/bali/bali.webp', '/images/bali/bali-2.jpg', '/images/bali/bali-3.jpg', '/images/bali/ubud-bali.jpg'];
+    if (dest.includes('himalaya') || dest.includes('himachal') || dest.includes('trek') || cat.includes('adventure') || title.includes('trek'))
+      return ['/images/himalaya/him2.avif', '/images/himalaya/him3.avif', '/images/himalaya/him4.jpg', '/images/himalaya/hampta.jpg', '/images/himalaya/bhamhatal.jpg'];
+    return ['/images/background.jpg', '/images/photo-1476514525535-07fb3b4ae5f1.avif'];
+  };
+
+  const getFeaturedImage = (trip) => {
+    const images = getFeaturedImageSet(trip);
+    return images[(featuredImageIndex[trip._id] || 0) % images.length];
+  };
+
+  const featuredNextImage = (tripId, e) => {
+    e.stopPropagation();
+    const images = getFeaturedImageSet(featuredTrips.find(t => t._id === tripId));
+    setFeaturedTransitioning(prev => ({ ...prev, [tripId]: true }));
+    setTimeout(() => {
+      setFeaturedImageIndex(prev => ({ ...prev, [tripId]: ((prev[tripId] || 0) + 1) % images.length }));
+      setTimeout(() => setFeaturedTransitioning(prev => ({ ...prev, [tripId]: false })), 50);
+    }, 250);
+  };
+
+  const featuredPrevImage = (tripId, e) => {
+    e.stopPropagation();
+    const images = getFeaturedImageSet(featuredTrips.find(t => t._id === tripId));
+    setFeaturedTransitioning(prev => ({ ...prev, [tripId]: true }));
+    setTimeout(() => {
+      setFeaturedImageIndex(prev => ({ ...prev, [tripId]: (prev[tripId] || 0) === 0 ? images.length - 1 : (prev[tripId] || 0) - 1 }));
+      setTimeout(() => setFeaturedTransitioning(prev => ({ ...prev, [tripId]: false })), 50);
+    }, 250);
+  };
+
+  const formatCurrency = (amount, currency = 'INR') => {
+    if (!amount) return 'N/A';
+    return new Intl.NumberFormat('en-IN', { style: 'currency', currency, minimumFractionDigits: 0 }).format(amount);
+  };
+
   const fetchAllReviews = async () => {
     try {
       const { data } = await reviewAPI.getAllReviews();
       setAllReviews(data);
     } catch (error) {
       console.error('Error fetching reviews:', error);
-    }
-  };
-
-  const fetchFeaturedTrips = async () => {
-    try {
-      const { data } = await tripAPI.getFeaturedTrips();
-      setFeaturedTrips(data.slice(0, 6));
-    } catch (error) {
-      console.error('Error fetching featured trips:', error);
     }
   };
 
@@ -150,6 +221,7 @@ const Dashboard = () => {
         fetchTrips();
       } catch (error) {
         console.error('Error deleting trip:', error);
+        alert('Failed to delete trip. Please try again.');
       }
     }
   };
@@ -164,14 +236,29 @@ const Dashboard = () => {
       const bestIndex = trip.bestPhotoIndex || 0;
       return trip.images[bestIndex] || trip.images[0];
     }
+    // Handle gallery images
+    if (trip.galleryImages && trip.galleryImages.length > 0) {
+      const bestIndex = trip.bestPhotoIndex || 0;
+      return trip.galleryImages[bestIndex] || trip.galleryImages[0];
+    }
     // Handle single image from old format
     if (trip.image) {
       return trip.image;
     }
-    // Get images by destination
-    const destImages = getImagesByDestination(trip.destination, trip.category);
-    const carouselIndex = currentImageIndex[trip._id] || 0;
-    return destImages[carouselIndex % destImages.length];
+    // Get single image by destination - use Rajasthan cover photo for Rajasthan trips
+    const dest = trip.destination?.toLowerCase() || '';
+    const tripTitle = trip.title?.toLowerCase() || '';
+    
+    // Check for Rajasthan/Royal Heritage trips and use Rajasthan cover photo
+    if (dest.includes('rajasthan') || dest.includes('jaipur') || dest.includes('jodhpur') ||
+        dest.includes('jaisalmer') || dest.includes('udaipur') || tripTitle.includes('rajasthan') ||
+        tripTitle.includes('royal') || tripTitle.includes('heritage')) {
+      return rajasthanCoverPhoto; // Use dedicated cover photo for dashboard cards
+    }
+    
+    // Get single image by destination (no carousel)
+    const destImages = getImagesByDestination(trip.destination, trip.category, trip.title);
+    return destImages[0] || himalayaCarouselImages[0];
   };
 
   const formatBudget = (trip) => {
@@ -227,31 +314,6 @@ const Dashboard = () => {
 
   const openTripDetails = (trip) => {
     navigate(`/trip/${trip._id}/details`);
-  };
-
-  const getTotalImagesForTrip = (trip) => {
-    const destImages = getImagesByDestination(trip.destination, trip.category);
-    return destImages.length;
-  };
-
-  const nextImage = (tripId, e) => {
-    e.stopPropagation();
-    const trip = filteredTrips.find(t => t._id === tripId);
-    const totalImages = getTotalImagesForTrip(trip);
-    setCurrentImageIndex(prev => ({
-      ...prev,
-      [tripId]: ((prev[tripId] || 0) + 1) % totalImages
-    }));
-  };
-
-  const prevImage = (tripId, e) => {
-    e.stopPropagation();
-    const trip = filteredTrips.find(t => t._id === tripId);
-    const totalImages = getTotalImagesForTrip(trip);
-    setCurrentImageIndex(prev => ({
-      ...prev,
-      [tripId]: prev[tripId] === 0 ? totalImages - 1 : prev[tripId] - 1
-    }));
   };
 
   return (
@@ -352,131 +414,92 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Featured Trips Section for Admin */}
-        {user?.role === 'admin' && featuredTrips.length > 0 && (
-          <div className="featured-trips-section">
-            <div className="section-header">
-              <h2 className="section-title">⭐ Featured Trips</h2>
+        {/* Featured Trips Section */}
+        <div className="db-featured-section">
+          <div className="section-header">
+            <h2 className="section-title">⭐ Featured Trips</h2>
+            <button className="btn-view-all-featured" onClick={() => navigate('/featured')}>View All →</button>
+          </div>
+          {featuredTrips.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-state-icon">⭐</div>
+              <h3>No featured trips yet</h3>
+              <p>{user?.role === 'admin' ? 'Create your first featured trip package.' : 'Check back soon for amazing travel experiences.'}</p>
+              {user?.role === 'admin' && <button onClick={() => navigate('/admin/trips/new')} className="btn btn-primary">Create Featured Trip</button>}
             </div>
-            <div className="trips-grid">
-              {featuredTrips.map((trip, index) => (
-                <div key={trip._id} className={`trip-card-new featured-trip ${trip.status || 'planned'}`}>
-                  <div className="trip-card-header">
-                    <div className="trip-image-wrapper">
-                      <img 
-                        src={getImageForTrip(trip, index)} 
+          ) : (
+            <div className="db-featured-grid">
+              {featuredTrips.map(trip => {
+                const images = getFeaturedImageSet(trip);
+                const currentIdx = featuredImageIndex[trip._id] || 0;
+                const CATEGORY_ICONS = { adventure: '🏔️', beach: '🏖️', cultural: '🏛️', luxury: '💎', budget: '💰', family: '👨‍👩‍👧', honeymoon: '💑', wildlife: '🦁' };
+                return (
+                  <div key={trip._id} className="db-featured-card">
+                    <div className="db-featured-carousel">
+                      <img
+                        src={getFeaturedImage(trip)}
                         alt={trip.title}
-                        className="trip-image-new"
-                        onError={(e) => {
-                          e.target.src = defaultImages[0];
-                        }}
+                        className={`db-featured-img ${featuredTransitioning[trip._id] ? 'fade-out' : 'fade-in'}`}
+                        onError={e => { e.target.src = '/images/background.jpg'; }}
                       />
-                      {getTotalImagesForTrip(trip) > 1 && (
+                      {images.length > 1 && (
                         <>
-                          <button 
-                            className="carousel-btn carousel-prev"
-                            onClick={(e) => prevImage(trip._id, e)}
-                          >
-                            ‹
-                          </button>
-                          <button 
-                            className="carousel-btn carousel-next"
-                            onClick={(e) => nextImage(trip._id, e)}
-                          >
-                            ›
-                          </button>
-                          <div className="image-counter">
-                            {(currentImageIndex[trip._id] || 0) + 1}/{getTotalImagesForTrip(trip)}
+                          <button className="db-carousel-btn db-carousel-prev" onClick={e => featuredPrevImage(trip._id, e)}>‹</button>
+                          <button className="db-carousel-btn db-carousel-next" onClick={e => featuredNextImage(trip._id, e)}>›</button>
+                          <div className="db-carousel-dots">
+                            {images.map((_, i) => <button key={i} className={`db-carousel-dot ${currentIdx === i ? 'active' : ''}`} onClick={e => { e.stopPropagation(); setFeaturedImageIndex(prev => ({ ...prev, [trip._id]: i })); }} />)}
                           </div>
                         </>
                       )}
-                      <div className="trip-overlay">
-                        <div className="trip-badges">
-                          <div className={`status-badge ${trip.status || 'planned'}`}>
-                            {(trip.status || 'Planned').charAt(0).toUpperCase() + (trip.status || 'planned').slice(1)}
-                          </div>
-                          <div className="featured-star">⭐</div>
-                        </div>
-                        <div className="trip-quick-actions">
-                          <button 
-                            onClick={() => navigate(`/trip/${trip._id}/edit`)} 
-                            className="quick-action-btn edit-btn"
-                            title="Edit Trip"
-                          >
-                            ✏️
-                          </button>
-                          <button 
-                            onClick={() => openTripDetails(trip)} 
-                            className="quick-action-btn details-btn"
-                            title="View Details"
-                          >
-                            👁️
-                          </button>
-                        </div>
+                      <div className="db-card-overlay">
+                        <span className="db-badge-featured">⭐ Featured</span>
+                        {trip.category && <span className="db-badge-category">{CATEGORY_ICONS[trip.category?.toLowerCase()] || '🌍'} {trip.category}</span>}
+                      </div>
+                      <div className="db-price-pill">
+                        <span className="db-price-from">From</span>
+                        <span className="db-price-amount">{formatCurrency(trip.basePrice || trip.budget, trip.currency)}</span>
                       </div>
                     </div>
-                  </div>
-                  
-                  <div className="trip-card-body">
-                    <div className="trip-header-info">
-                      <h3 className="trip-title-new">{trip.title}</h3>
-                      <div className="trip-destination-new">
-                        <span className="location-icon">📍</span>
-                        {trip.destinationCity && trip.destinationCountry 
-                          ? `${trip.destinationCity}, ${trip.destinationCountry}` 
-                          : trip.destination || 'Destination TBD'
+
+                    <div className="db-featured-body">
+                      <h3 className="db-featured-title">{trip.title}</h3>
+                      <p className="db-featured-dest">📍 {trip.destination}{trip.city ? `, ${trip.city}` : ''}</p>
+                      <p className="db-featured-desc">{trip.shortDescription || trip.description}</p>
+
+                      <div className="db-info-row">
+                        <span>🕐 {trip.duration?.days ? `${trip.duration.days}D/${trip.duration.nights}N` : trip.numberOfDays ? `${trip.numberOfDays} days` : 'Flexible'}</span>
+                        <span>💺 {trip.totalSeats ? `${trip.totalSeats} seats` : 'Open'}</span>
+                        <span>👥 {trip.applicants?.length || 0} joined</span>
+                      </div>
+
+                      {trip.activities?.length > 0 && (
+                        <div className="db-activity-tags">
+                          {trip.activities.slice(0, 3).map((a, i) => <span key={i} className="db-activity-tag">{a.trim()}</span>)}
+                        </div>
+                      )}
+
+                      <div className="db-featured-author">
+                        <div className="db-author-avatar">{trip.userId?.name ? trip.userId.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'U'}</div>
+                        <div>
+                          <div className="db-author-name">{trip.userId?.name || 'Organizer'}</div>
+                          <div className="db-author-role">Trip Organizer</div>
+                        </div>
+                      </div>
+
+                      <div className="db-featured-actions">
+                        <button className="db-btn-details" onClick={() => navigate(`/trip/${trip._id}/details`)}>👁️ View Details</button>
+                        {user?.role === 'admin'
+                          ? <button className="db-btn-book" onClick={() => navigate(`/admin/trips/${trip._id}/edit`)}>✏️ Edit Trip</button>
+                          : <button className="db-btn-book" onClick={() => navigate('/confirm-trip', { state: { tripData: { tripTitle: trip.title, destination: trip.destination, basePrice: trip.basePrice || trip.budget, currency: trip.currency || 'INR', image: getFeaturedImage(trip), duration: trip.duration, category: trip.category, tripId: trip._id } } })}>🏷️ Book This Trip</button>
                         }
                       </div>
                     </div>
-                    
-                    <p className="trip-description-new">
-                      {trip.description || trip.detailedDescription || trip.shortDescription || 'No description available'}
-                    </p>
-                    
-                    <div className="trip-details-grid">
-                      <div className="detail-item">
-                        <div className="detail-icon">⏱️</div>
-                        <div className="detail-content">
-                          <span className="detail-label">Duration</span>
-                          <span className="detail-value">
-                            {trip.startDate && trip.endDate 
-                              ? formatDateRange(trip.startDate, trip.endDate)
-                              : trip.duration?.days 
-                                ? `${trip.duration.days} days`
-                                : 'Flexible'
-                            }
-                          </span>
-                        </div>
-                      </div>
-                      
-                      <div className="detail-item">
-                        <div className="detail-icon">💰</div>
-                        <div className="detail-content">
-                          <span className="detail-label">Budget</span>
-                          <span className="detail-value">
-                            {formatBudget(trip)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="trip-card-footer">
-                      <div className="trip-actions-new">
-                        <button 
-                          onClick={() => openTripDetails(trip)} 
-                          className="btn-primary-new"
-                        >
-                          <span className="btn-icon">👁️</span>
-                          View Details
-                        </button>
-                      </div>
-                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Trips Section - Only show for regular users */}
         {user?.role !== 'admin' && (
@@ -561,25 +584,6 @@ const Dashboard = () => {
                           e.target.src = defaultImages[0];
                         }}
                       />
-                      {getTotalImagesForTrip(trip) > 1 && (
-                        <>
-                          <button 
-                            className="carousel-btn carousel-prev"
-                            onClick={(e) => prevImage(trip._id, e)}
-                          >
-                            ‹
-                          </button>
-                          <button 
-                            className="carousel-btn carousel-next"
-                            onClick={(e) => nextImage(trip._id, e)}
-                          >
-                            ›
-                          </button>
-                          <div className="image-counter">
-                            {(currentImageIndex[trip._id] || 0) + 1}/{getTotalImagesForTrip(trip)}
-                          </div>
-                        </>
-                      )}
                       <div className="trip-overlay">
                         <div className="trip-badges">
                           <div className={`status-badge ${trip.status || 'planned'}`}>
@@ -624,7 +628,7 @@ const Dashboard = () => {
                     </div>
                     
                     <p className="trip-description-new">
-                      {trip.description || trip.detailedDescription || trip.shortDescription || 'No description available'}
+                      {trip.shortDescription || (trip.description && trip.description.length > 120 ? trip.description.substring(0, 120) + '...' : trip.description) || (trip.detailedDescription && trip.detailedDescription.length > 120 ? trip.detailedDescription.substring(0, 120) + '...' : trip.detailedDescription) || 'Experience an amazing adventure with breathtaking views and unforgettable memories.'}
                     </p>
                     
                     <div className="trip-details-grid">

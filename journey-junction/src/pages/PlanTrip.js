@@ -72,6 +72,9 @@ const PlanTrip = () => {
     emergencyProcedures: '',
     healthAndSafetyNotes: '',
     
+    // Media Gallery
+    mediaFiles: [],
+    
     // Document Upload
     passportCopy: null,
     idProof: null,
@@ -135,6 +138,71 @@ const PlanTrip = () => {
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleMediaUpload = (e) => {
+    const files = Array.from(e.target.files);
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    const validFiles = [];
+    
+    files.forEach(file => {
+      if (file.size > maxSize) {
+        alert(`File ${file.name} is too large. Maximum size is 10MB.`);
+        return;
+      }
+      
+      const fileWithPreview = {
+        file: file,
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        preview: URL.createObjectURL(file)
+      };
+      
+      validFiles.push(fileWithPreview);
+    });
+    
+    setFormData(prev => ({
+      ...prev,
+      mediaFiles: [...(prev.mediaFiles || []), ...validFiles]
+    }));
+  };
+
+  const handleCameraCapture = () => {
+    // Create a hidden file input for camera capture
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.capture = 'environment'; // Use rear camera
+    input.onchange = (e) => {
+      handleMediaUpload(e);
+    };
+    input.click();
+  };
+
+  const removeMediaFile = (index) => {
+    setFormData(prev => {
+      const newMediaFiles = [...prev.mediaFiles];
+      // Revoke the object URL to free memory
+      URL.revokeObjectURL(newMediaFiles[index].preview);
+      newMediaFiles.splice(index, 1);
+      return {
+        ...prev,
+        mediaFiles: newMediaFiles
+      };
+    });
+  };
+
+  const clearMediaFiles = () => {
+    // Revoke all object URLs to free memory
+    formData.mediaFiles?.forEach(file => {
+      URL.revokeObjectURL(file.preview);
+    });
+    
+    setFormData(prev => ({
+      ...prev,
+      mediaFiles: []
+    }));
   };
 
   const calculateDuration = () => {
@@ -791,9 +859,82 @@ const PlanTrip = () => {
             </div>
           </div>
 
-          {/* 9. Document Upload */}
+          {/* 9. Media Gallery */}
+          <div className="form-section media-gallery-section">
+            <h2>9️⃣ Media Gallery</h2>
+            <p className="section-description">Upload photos and videos to showcase your trip preferences or inspiration images.</p>
+            
+            <div className="media-upload-container">
+              <div className="upload-area">
+                <div className="upload-zone" onClick={() => document.getElementById('mediaFiles').click()}>
+                  <div className="upload-icon">📸</div>
+                  <h3>Upload Photos & Videos</h3>
+                  <p>Drag and drop files here or click to browse</p>
+                  <span className="upload-formats">Supports: JPG, PNG, GIF, MP4, MOV (Max 10MB each)</span>
+                </div>
+                <input
+                  type="file"
+                  id="mediaFiles"
+                  name="mediaFiles"
+                  multiple
+                  accept="image/*,video/*"
+                  onChange={handleMediaUpload}
+                  style={{ display: 'none' }}
+                />
+              </div>
+              
+              <div className="media-actions">
+                <button type="button" className="btn-media-upload" onClick={() => document.getElementById('mediaFiles').click()}>
+                  <span className="btn-icon">🖼️</span>
+                  Choose Files
+                </button>
+                <button type="button" className="btn-media-camera" onClick={handleCameraCapture}>
+                  <span className="btn-icon">📷</span>
+                  Take Photo
+                </button>
+                <button type="button" className="btn-media-clear" onClick={clearMediaFiles}>
+                  <span className="btn-icon">🗑️</span>
+                  Clear All
+                </button>
+              </div>
+              
+              {formData.mediaFiles && formData.mediaFiles.length > 0 && (
+                <div className="media-preview">
+                  <h4>Uploaded Media ({formData.mediaFiles.length})</h4>
+                  <div className="media-grid">
+                    {formData.mediaFiles.map((file, index) => (
+                      <div key={index} className="media-item">
+                        {file.type.startsWith('image/') ? (
+                          <img src={file.preview} alt={`Upload ${index + 1}`} className="media-thumbnail" />
+                        ) : (
+                          <div className="video-thumbnail">
+                            <video src={file.preview} className="media-thumbnail" />
+                            <div className="video-overlay">▶️</div>
+                          </div>
+                        )}
+                        <div className="media-info">
+                          <span className="media-name">{file.name}</span>
+                          <span className="media-size">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
+                        </div>
+                        <button 
+                          type="button" 
+                          className="media-remove" 
+                          onClick={() => removeMediaFile(index)}
+                          title="Remove file"
+                        >
+                          ❌
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 10. Document Upload */}
           <div className="form-section">
-            <h2>9️⃣ Document Upload</h2>
+            <h2>🔟 Document Upload</h2>
             <p className="section-description">Optional but useful.</p>
             
             <div className="form-group">
@@ -833,9 +974,9 @@ const PlanTrip = () => {
             </div>
           </div>
 
-          {/* 10. Payment Information */}
+          {/* 11. Payment Information */}
           <div className="form-section">
-            <h2>🔟 Payment Information</h2>
+            <h2>🔢 Payment Information</h2>
             
             <div className="form-group">
               <label htmlFor="paymentMethod">Payment Method *</label>

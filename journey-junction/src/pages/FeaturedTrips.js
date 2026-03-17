@@ -88,27 +88,18 @@ const FeaturedTrips = () => {
     // Bali-related images
     if (destination.includes('bali') || title.includes('bali')) {
       return [
-        '/images/bali.webp',
-        '/images/bali-2.jpg',
-        '/images/bali-3.jpg',
-        '/images/ubud-bali.jpg',
-        '/images/kutabeach.jpeg',
-        '/images/nusapenida.jpeg',
-        '/images/uluwatutemple.jpeg',
-        '/images/Tegallalang Rice Terraces.webp',
-        '/images/with-the-infinity-pool.jpg'
+        '/images/bali/bali.webp',
+        '/images/bali/bali-2.jpg',
+        '/images/bali/bali-3.jpg',
+        '/images/bali/ubud-bali.jpg'
       ];
     }
     
     // Paris-related images
     if (destination.includes('paris') || destination.includes('france') || title.includes('paris')) {
       return [
-        '/images/paris.webp',
-        '/images/paris-2.jpg',
-        '/images/paris-4.jpeg',
-        '/images/notre-dame-de-paris-cathedral-paris-france.webp',
-        '/images/montmartre.jpeg',
-        '/images/seine-river.jpeg'
+        '/images/background.jpg',
+        '/images/photo-1476514525535-07fb3b4ae5f1.avif'
       ];
     }
     
@@ -116,31 +107,31 @@ const FeaturedTrips = () => {
     if (destination.includes('beach') || destination.includes('island') || 
         category.includes('beach') || title.includes('beach') || title.includes('tropical')) {
       return [
-        '/images/beach.jpeg',
-        '/images/kutabeach.jpeg',
-        '/images/nusapenida.jpeg',
-        '/images/with-the-infinity-pool.jpg',
-        '/images/beautiful-girl-standing-boat-looking-mountains-ratchaprapha-dam-khao-sok-national-park-surat-thani-province-thailand_335224-849.avif'
+        '/images/beautiful-girl-standing-boat-looking-mountains-ratchaprapha-dam-khao-sok-national-park-surat-thani-province-thailand_335224-849.avif',
+        '/images/background.jpg'
       ];
     }
     
-    // Adventure/cultural trips
-    if (category.includes('adventure') || category.includes('cultural') || 
-        title.includes('adventure') || title.includes('cultural')) {
+    // Rajasthan
+    if (destination.includes('rajasthan') || destination.includes('jaipur') || destination.includes('jodhpur') || destination.includes('udaipur') || title.includes('rajasthan')) {
+      return ['/images/rajasthan/rajasthan1.jpeg'];
+    }
+    
+    // Himalaya/adventure/trekking trips
+    if (destination.includes('himalaya') || destination.includes('himachal') || destination.includes('trek') ||
+        category.includes('adventure') || title.includes('trek') || title.includes('himalaya')) {
       return [
-        '/images/Tegallalang Rice Terraces.webp',
-        '/images/uluwatutemple.jpeg',
-        '/images/scaredmonkey.jpeg',
-        '/images/montmartre.jpeg',
-        '/images/arc.jpeg'
+        '/images/himalaya/him2.avif',
+        '/images/himalaya/him3.avif',
+        '/images/himalaya/him4.jpg',
+        '/images/himalaya/hampta.jpg',
+        '/images/himalaya/bhamhatal.jpg'
       ];
     }
     
     // Default image set for general trips
     return [
-      '/images/bali.webp',
-      '/images/paris.webp',
-      '/images/beach.jpeg',
+      '/images/bali/bali.webp',
       '/images/photo-1476514525535-07fb3b4ae5f1.avif',
       '/images/background.jpg',
       '/images/beautiful-girl-standing-boat-looking-mountains-ratchaprapha-dam-khao-sok-national-park-surat-thani-province-thailand_335224-849.avif'
@@ -148,50 +139,18 @@ const FeaturedTrips = () => {
   };
 
   const getImageForTrip = (trip, imageIndex = 0) => {
-    // First check if trip has uploaded images
     if (trip.galleryImages && trip.galleryImages.length > 0) {
-      const uploadedImages = trip.galleryImages.filter(imageUrl => 
-        imageUrl.startsWith('data:image/') || 
-        (!imageUrl.includes('/images/') && !imageUrl.includes('/assets/') && 
-         !imageUrl.includes('default') && !imageUrl.includes('placeholder'))
-      );
-      
-      if (uploadedImages.length > 0) {
-        return uploadedImages[imageIndex % uploadedImages.length];
-      }
+      return trip.galleryImages[imageIndex % trip.galleryImages.length];
     }
-    
-    // Fallback: check for single uploaded image in old format
-    if (trip.image && trip.image.startsWith('data:image/')) {
-      return trip.image;
-    }
-    
-    // Use predefined image set based on trip details
+    if (trip.image) return trip.image;
     const imageSet = getImageSetForTrip(trip);
     return imageSet[imageIndex % imageSet.length];
   };
 
   const getTotalImagesForTrip = (trip) => {
-    // First check uploaded images
-    if (trip.galleryImages && trip.galleryImages.length > 0) {
-      const uploadedImages = trip.galleryImages.filter(imageUrl => 
-        imageUrl.startsWith('data:image/') || 
-        (!imageUrl.includes('/images/') && !imageUrl.includes('/assets/') && 
-         !imageUrl.includes('default') && !imageUrl.includes('placeholder'))
-      );
-      if (uploadedImages.length > 0) {
-        return uploadedImages.length;
-      }
-    }
-    
-    // Check for single uploaded image in old format
-    if (trip.image && trip.image.startsWith('data:image/')) {
-      return 1;
-    }
-    
-    // Return predefined image set count
-    const imageSet = getImageSetForTrip(trip);
-    return imageSet.length;
+    if (trip.galleryImages && trip.galleryImages.length > 0) return trip.galleryImages.length;
+    if (trip.image) return 1;
+    return getImageSetForTrip(trip).length;
   };
 
   const nextImage = (tripId, e) => {

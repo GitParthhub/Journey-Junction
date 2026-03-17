@@ -47,6 +47,8 @@ export const adminAPI = {
   // Trip applicants management
   getTripApplicants: () => API.get('/admin/applicants'),
   updateApplicantStatus: (tripId, applicantId, status) => API.patch(`/admin/trips/${tripId}/applicants/${applicantId}`, { status }),
+  getTripsByStatus: () => API.get('/admin/trips/by-status'),
+  updateTripStatus: (id, status) => API.patch(`/admin/trips/${id}/status`, { status }),
   // Admin notifications
   getNotifications: () => API.get('/admin/notifications'),
   getNotificationStats: () => API.get('/admin/notifications/stats'),

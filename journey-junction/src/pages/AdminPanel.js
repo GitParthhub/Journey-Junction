@@ -20,6 +20,9 @@ const AdminPanel = () => {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [allReviews, setAllReviews] = useState([]);
   const [showReviewsModal, setShowReviewsModal] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [tripsByStatus, setTripsByStatus] = useState({ planned: [], ongoing: [], completed: [] });
+  const [statusSubTab, setStatusSubTab] = useState('planned');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -27,6 +30,7 @@ const AdminPanel = () => {
     fetchTrips();
     fetchUsers();
     fetchApplicants();
+    fetchTripsByStatus();
     loadNotifications();
     fetchAllReviews();
 
@@ -88,6 +92,26 @@ const AdminPanel = () => {
       Object.values(intervals).forEach(interval => clearInterval(interval));
     };
   }, [trips]);
+
+  const fetchTripsByStatus = async () => {
+    try {
+      const { data } = await adminAPI.getTripsByStatus();
+      setTripsByStatus(data);
+    } catch (error) {
+      console.error('Error fetching trips by status:', error);
+    }
+  };
+
+  const handleStatusChange = async (tripId, newStatus) => {
+    try {
+      await adminAPI.updateTripStatus(tripId, newStatus);
+      fetchTripsByStatus();
+      fetchTrips();
+      showToast(`✅ Trip status updated to "${newStatus}"`, 'success');
+    } catch (error) {
+      showToast('Failed to update trip status.', 'error');
+    }
+  };
 
   const fetchStats = async () => {
     try {
@@ -208,26 +232,12 @@ const AdminPanel = () => {
   };
 
   const getImageForTrip = (trip, imageIndex = 0) => {
-    // Only use trip-specific uploaded images (galleryImages from the new format)
     if (trip.galleryImages && trip.galleryImages.length > 0) {
-      // Filter to only include base64 uploaded images, not default images
-      const uploadedImages = trip.galleryImages.filter(imageUrl => 
-        imageUrl.startsWith('data:image/') || 
-        (!imageUrl.includes('/images/') && !imageUrl.includes('/assets/') && 
-         !imageUrl.includes('default') && !imageUrl.includes('placeholder'))
-      );
-      
-      if (uploadedImages.length > 0) {
-        return uploadedImages[imageIndex % uploadedImages.length];
-      }
+      return trip.galleryImages[imageIndex % trip.galleryImages.length];
     }
-    
-    // Fallback: check for single uploaded image in old format
-    if (trip.image && trip.image.startsWith('data:image/')) {
+    if (trip.image) {
       return trip.image;
     }
-    
-    // If no uploaded images, use destination-based images
     const destImages = getImagesByDestination(trip.destination, trip.category);
     return destImages[imageIndex % destImages.length];
   };
@@ -247,10 +257,13 @@ const AdminPanel = () => {
     
     if (dest.includes('paris') || dest.includes('france')) {
       return [
-        '/images/paris/paris.webp',
-        '/images/paris/paris-2.jpg',
-        '/images/paris/paris-4.jpeg'
+        '/images/background.jpg',
+        '/images/photo-1476514525535-07fb3b4ae5f1.avif'
       ];
+    }
+    
+    if (dest.includes('rajasthan') || dest.includes('jaipur') || dest.includes('jodhpur') || dest.includes('udaipur')) {
+      return ['/images/rajasthan/rajasthan1.jpeg'];
     }
     
     if (dest.includes('himalaya') || dest.includes('himachal') || dest.includes('triund') || dest.includes('hampta') || dest.includes('kedar') || dest.includes('bhamhatal')) {
@@ -275,9 +288,8 @@ const AdminPanel = () => {
     
     if (cat.includes('beach') || dest.includes('beach') || dest.includes('island')) {
       return [
-        '/images/beach/beach.jpeg',
-        '/images/beach/kutabeach.jpeg',
-        '/images/beach/nusapenida.jpeg'
+        '/images/beautiful-girl-standing-boat-looking-mountains-ratchaprapha-dam-khao-sok-national-park-surat-thani-province-thailand_335224-849.avif',
+        '/images/background.jpg'
       ];
     }
     
@@ -288,23 +300,11 @@ const AdminPanel = () => {
   };
 
   const getTotalImagesForTrip = (trip) => {
-    // Only count trip-specific uploaded images
     if (trip.galleryImages && trip.galleryImages.length > 0) {
-      const uploadedImages = trip.galleryImages.filter(imageUrl => 
-        imageUrl.startsWith('data:image/') || 
-        (!imageUrl.includes('/images/') && !imageUrl.includes('/assets/') && 
-         !imageUrl.includes('default') && !imageUrl.includes('placeholder'))
-      );
-      return uploadedImages.length;
+      return trip.galleryImages.length;
     }
-    
-    // Check for single uploaded image in old format
-    if (trip.image && trip.image.startsWith('data:image/')) {
-      return 1;
-    }
-    
-    // No uploaded images
-    return 0;
+    if (trip.image) return 1;
+    return getImagesByDestination(trip.destination, trip.category).length;
   };
 
   const nextImage = (tripId, e) => {
@@ -422,15 +422,27 @@ const AdminPanel = () => {
     return 'N/A';
   };
 
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3500);
+  };
+
   const updateApplicantStatus = async (tripId, applicantId, status) => {
     try {
       await adminAPI.updateApplicantStatus(tripId, applicantId, status);
-      fetchApplicants(); // Refresh the applicants list
-      fetchTrips(); // Refresh trips to update applicant counts
-      alert(`Applicant ${status} successfully!`);
+      fetchApplicants();
+      fetchTrips();
+      const applicantName = applicants
+        .flatMap(t => t.applicants)
+        .find(a => a._id === applicantId)?.userId?.name || 'Applicant';
+      if (status === 'approved') {
+        showToast(`✅ ${applicantName} approved! A notification has been sent to the user.`, 'success');
+      } else {
+        showToast(`❌ ${applicantName}'s application rejected. The user has been notified.`, 'error');
+      }
     } catch (error) {
       console.error('Error updating applicant status:', error);
-      alert('Error updating applicant status');
+      showToast('Failed to update applicant status. Please try again.', 'error');
     }
   };
 
@@ -485,6 +497,12 @@ const AdminPanel = () => {
             onClick={() => setActiveTab('applicants')}
           >
             📋 Trip Applicants
+          </button>
+          <button 
+            className={activeTab === 'tripstatus' ? 'active' : ''} 
+            onClick={() => setActiveTab('tripstatus')}
+          >
+            🗂️ Trip Status
           </button>
         </div>
 
@@ -860,6 +878,103 @@ const AdminPanel = () => {
             </div>
           )}
 
+          {activeTab === 'tripstatus' && (
+            <div className="trip-status-tab">
+              <div className="status-subtabs">
+                {['planned', 'ongoing', 'completed'].map(s => (
+                  <button
+                    key={s}
+                    className={`status-subtab-btn ${statusSubTab === s ? 'active' : ''} ${s}`}
+                    onClick={() => setStatusSubTab(s)}
+                  >
+                    {s === 'planned' ? '🗓️' : s === 'ongoing' ? '⏳' : '✅'}{' '}
+                    {s.charAt(0).toUpperCase() + s.slice(1)}
+                    <span className="status-count-badge">{tripsByStatus[s]?.length || 0}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="admin-table-container">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Trip</th>
+                      <th>Destination</th>
+                      <th>User</th>
+                      <th>Email</th>
+                      <th>Budget</th>
+                      <th>Duration</th>
+                      <th>Applicants</th>
+                      <th>Status</th>
+                      <th>Change Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(tripsByStatus[statusSubTab] || []).map(trip => (
+                      <tr key={trip._id}>
+                        <td>
+                          <div className="status-trip-title">{trip.title}</div>
+                          {trip.isFeatured && <span className="featured-mini-badge">⭐ Featured</span>}
+                        </td>
+                        <td>{trip.destination}{trip.city ? `, ${trip.city}` : ''}</td>
+                        <td>
+                          <div className="status-user-cell">
+                            <div className="status-user-avatar">
+                              {(trip.userId?.name || 'U').charAt(0).toUpperCase()}
+                            </div>
+                            <span>{trip.userId?.name || 'Unknown'}</span>
+                          </div>
+                        </td>
+                        <td>{trip.userId?.email || 'N/A'}</td>
+                        <td>{formatCurrency(trip.basePrice || trip.budget, trip.currency)}</td>
+                        <td>
+                          <span className="days-badge">
+                            {getDaysCount(trip)}{getDaysCount(trip) !== 'N/A' ? ' days' : ''}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="applicants-count-pill">
+                            {trip.applicants?.length || 0} applicant{(trip.applicants?.length || 0) !== 1 ? 's' : ''}
+                          </span>
+                        </td>
+                        <td>
+                          <span className={`status-badge ${(trip.status || 'planned').toLowerCase()}`}>
+                            {trip.status || 'planned'}
+                          </span>
+                        </td>
+                        <td>
+                          <div className="status-change-actions">
+                            {['planned', 'ongoing', 'completed']
+                              .filter(s => s !== (trip.status || 'planned').toLowerCase())
+                              .map(s => (
+                                <button
+                                  key={s}
+                                  className={`btn-table btn-status-change btn-status-${s}`}
+                                  onClick={() => handleStatusChange(trip._id, s)}
+                                >
+                                  → {s.charAt(0).toUpperCase() + s.slice(1)}
+                                </button>
+                              ))
+                            }
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {(tripsByStatus[statusSubTab] || []).length === 0 && (
+                  <div className="empty-state">
+                    <div className="empty-state-icon">
+                      {statusSubTab === 'planned' ? '🗓️' : statusSubTab === 'ongoing' ? '⏳' : '✅'}
+                    </div>
+                    <div className="empty-state-title">No {statusSubTab} trips</div>
+                    <div className="empty-state-description">No trips with "{statusSubTab}" status found</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {activeTab === 'applicants' && (
             <div>
               <div className="admin-table-container">
@@ -912,39 +1027,23 @@ const AdminPanel = () => {
                             </div>
                           </td>
                           <td>
-                            <div className="table-actions">
-                              {applicant.status === 'pending' && (
-                                <>
-                                  <button 
-                                    onClick={() => updateApplicantStatus(trip._id, applicant._id, 'approved')}
-                                    className="btn-table btn-approve"
-                                  >
-                                    Approve
-                                  </button>
-                                  <button 
-                                    onClick={() => updateApplicantStatus(trip._id, applicant._id, 'rejected')}
-                                    className="btn-table btn-reject"
-                                  >
-                                    Reject
-                                  </button>
-                                </>
-                              )}
-                              {applicant.status === 'approved' && (
-                                <button 
-                                  onClick={() => updateApplicantStatus(trip._id, applicant._id, 'rejected')}
-                                  className="btn-table btn-reject"
-                                >
-                                  Reject
-                                </button>
-                              )}
-                              {applicant.status === 'rejected' && (
-                                <button 
-                                  onClick={() => updateApplicantStatus(trip._id, applicant._id, 'approved')}
-                                  className="btn-table btn-approve"
-                                >
-                                  Approve
-                                </button>
-                              )}
+                            <div className="applicant-actions">
+                              <button
+                                onClick={() => updateApplicantStatus(trip._id, applicant._id, 'approved')}
+                                className={`btn-table btn-approve ${applicant.status === 'approved' ? 'btn-active-status' : ''}`}
+                                disabled={applicant.status === 'approved'}
+                                title="Approve applicant"
+                              >
+                                ✓ Approve
+                              </button>
+                              <button
+                                onClick={() => updateApplicantStatus(trip._id, applicant._id, 'rejected')}
+                                className={`btn-table btn-reject ${applicant.status === 'rejected' ? 'btn-active-status' : ''}`}
+                                disabled={applicant.status === 'rejected'}
+                                title="Reject applicant"
+                              >
+                                ✗ Reject
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -965,6 +1064,14 @@ const AdminPanel = () => {
           )}
         </div>
       </div>
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className={`admin-toast admin-toast-${toast.type}`}>
+          <span>{toast.message}</span>
+          <button className="admin-toast-close" onClick={() => setToast(null)}>×</button>
+        </div>
+      )}
 
     </div>
   );

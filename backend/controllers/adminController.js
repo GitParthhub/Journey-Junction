@@ -1,6 +1,44 @@
 const Trip = require('../models/Trip');
 const User = require('../models/User');
 
+exports.getTripsByStatus = async (req, res) => {
+  try {
+    const trips = await Trip.find()
+      .populate('userId', 'name email')
+      .populate('applicants.userId', 'name email')
+      .sort({ createdAt: -1 });
+
+    const grouped = {
+      planned:   trips.filter(t => (t.status || 'planned').toLowerCase() === 'planned'),
+      ongoing:   trips.filter(t => (t.status || '').toLowerCase() === 'ongoing'),
+      completed: trips.filter(t => (t.status || '').toLowerCase() === 'completed'),
+    };
+
+    res.json(grouped);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+exports.updateTripStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+    if (!['planned', 'ongoing', 'completed'].includes(status))
+      return res.status(400).json({ message: 'Invalid status' });
+
+    const trip = await Trip.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { new: true }
+    ).populate('userId', 'name email');
+
+    if (!trip) return res.status(404).json({ message: 'Trip not found' });
+    res.json(trip);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 exports.getAllTrips = async (req, res) => {
   try {
     const trips = await Trip.find()
@@ -125,15 +163,79 @@ exports.createTripAsAdmin = async (req, res) => {
 
 exports.updateTripAsAdmin = async (req, res) => {
   try {
+    console.log('Admin updating trip with ID:', req.params.id);
+    console.log('Update data:', req.body);
+    
     const trip = await Trip.findById(req.params.id);
-    if (!trip) return res.status(404).json({ message: 'Trip not found' });
+    if (!trip) {
+      console.log('Trip not found');
+      return res.status(404).json({ message: 'Trip not found' });
+    }
 
-    Object.assign(trip, req.body);
+    // Update trip fields safely
+    const allowedFields = [
+      'title', 'destination', 'destinationCity', 'destinationCountry', 'description', 
+      'shortDescription', 'detailedDescription', 'startDate', 'endDate', 'budget', 
+      'customBudget', 'budgetRange', 'preferredCurrency', 'currency', 'basePrice',
+      'activities', 'category', 'status', 'isFeatured', 'duration', 'numberOfTravelers',
+      'tripType', 'accommodation', 'transportation', 'requirements', 'weather',
+      'notes', 'additionalInfo', 'highlights', 'itinerary', 'placesToVisit',
+      'includedServices', 'excludedServices', 'activitiesIncluded', 'images',
+      'galleryImages', 'image', 'coverImage', 'mainImage', 'bestPhotoIndex',
+      'departureCity', 'arrivalDestination', 'groupSizeLimit', 'minimumTravelers',
+      'totalSeats', 'bookingDeadline', 'childPrice', 'discountPrice', 'taxes'
+    ];
+    
+    // Only update allowed fields that are present in request body
+    allowedFields.forEach(field => {
+      if (req.body.hasOwnProperty(field)) {
+        trip[field] = req.body[field];
+      }
+    });
+    
+    // Validate and save
     await trip.save();
-    const populatedTrip = await Trip.findById(trip._id).populate('userId', 'name email');
-    res.json(populatedTrip);
+    
+    console.log('Trip updated successfully by admin:', trip._id);
+    
+    // Return populated trip data
+    const populatedTrip = await Trip.findById(trip._id)
+      .populate('userId', 'name email')
+      .populate('applicants.userId', 'name email');
+    
+    res.json({ 
+      success: true,
+      message: 'Trip updated successfully',
+      trip: populatedTrip 
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error updating trip as admin:', error);
+    
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      const validationErrors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({ 
+        success: false,
+        message: 'Validation error', 
+        errors: validationErrors 
+      });
+    }
+    
+    // Handle cast errors (invalid ObjectId, etc.)
+    if (error.name === 'CastError') {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Invalid data format', 
+        error: error.message 
+      });
+    }
+    
+    // Generic server error
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error while updating trip', 
+      error: error.message 
+    });
   }
 };
 

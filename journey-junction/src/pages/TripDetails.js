@@ -5,13 +5,45 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import './TripDetails.css';
 
+// Import himalaya images
+import him2 from '../../../images/himalaya/him2.jpeg';
+import him3 from '../../../images/himalaya/him3.jpg';
+import him4 from '../../../images/himalaya/him4.jpeg';
+import hampta from '../../../images/himalaya/hampta.jpeg';
+import bhamhatal from '../../../images/himalaya/bhamhatal.jpeg';
+import triund from '../../../images/himalaya/triund.jpeg';
+import kedar from '../../../images/himalaya/kedar.png';
+import valley from '../../../images/himalaya/valley.jpg';
+
 const TripDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [trip, setTrip] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [showImageModal, setShowImageModal] = useState(false);
+  const [featuredTrips, setFeaturedTrips] = useState([]);
+  const [featuredImageIndex, setFeaturedImageIndex] = useState({});
+
+  // Himalaya images uploaded by admin in the images/himalaya folder
+  const himalayaImages = [
+    '/images/himalaya/him2.jpeg',
+    '/images/himalaya/him3.jpg',
+    '/images/himalaya/him4.jpeg',
+    '/images/himalaya/hampta.jpeg',
+    '/images/himalaya/bhamhatal.jpeg',
+    '/images/himalaya/triund.jpeg',
+    '/images/himalaya/kedar.png',
+    '/images/himalaya/valley.jpg'
+  ];
+
+  // Rajasthan images for royal heritage trips
+  const rajasthanImages = [
+    '/images/rajasthan/rajasthan1.jpeg',
+    '/images/rajasthan/-zgcUxh4KMeyquudTNwFqaJ7SIxIa6eW7PutoEOk2jZuL-nFeMwxWoHgp9e6kJi7LrLMmtDtAK1Eaw6QdTZIvSXidZYu8nRvKQ1NrmBvi0w.jpeg',
+    '/images/rajasthan/kc997oKX_Rfk8Xlbg21RfRlKF0m3DjmiYfDY0Iq2lAQQdjuND3yVLTEtHp7hv100dxzWq_8_BvYHvZy3HpVfSB3sCP2_AswPnnGv5XIlEM8.jpeg',
+    '/images/rajasthan/mJhhnB4vUqAFJ2OYJRHS3LlL391K-PVwZVcpVSqYHQMxrZzhIBHVBcBsTxWuoTD4jymZBSv_1UG95Su0f3T3Roq9516gFbgr6BaYKeM7fq4.jpeg',
+    '/images/rajasthan/XS2aDXkV0VjtL_Jg7AbUEMOjwCSBR-yTVCMs722zI-NDtrGM_0p-kiumaYtVHxlFXCAnvGSEEpUMKF9opM9mWKXYhutLQWpnLuBF2fIoLXg.jpeg'
+  ];
 
   const defaultImages = [
     '/images/bali.webp',
@@ -22,7 +54,49 @@ const TripDetails = () => {
 
   useEffect(() => {
     fetchTripDetails();
+    fetchFeaturedTrips();
   }, [id]);
+
+  // Auto-carousel effect for main trip images
+  useEffect(() => {
+    const images = getImages();
+    if (images.length > 1) {
+      const interval = setInterval(() => {
+        setCurrentImageIndex(prev => (prev + 1) % images.length);
+      }, 3000); // Change image every 3 seconds
+
+      return () => clearInterval(interval);
+    }
+  }, [trip]);
+
+  // Auto-carousel for featured trips
+  useEffect(() => {
+    const intervals = {};
+    
+    featuredTrips.forEach(featuredTrip => {
+      const tripImages = getFeaturedTripImages(featuredTrip);
+      
+      if (tripImages.length > 1) {
+        // Initialize image index if not set
+        if (featuredImageIndex[featuredTrip._id] === undefined) {
+          setFeaturedImageIndex(prev => ({ ...prev, [featuredTrip._id]: 0 }));
+        }
+        
+        // Auto-advance carousel every 2.5 seconds
+        intervals[featuredTrip._id] = setInterval(() => {
+          setFeaturedImageIndex(prev => ({
+            ...prev,
+            [featuredTrip._id]: ((prev[featuredTrip._id] || 0) + 1) % tripImages.length
+          }));
+        }, 2500);
+      }
+    });
+
+    // Cleanup function
+    return () => {
+      Object.values(intervals).forEach(interval => clearInterval(interval));
+    };
+  }, [featuredTrips]);
 
   const fetchTripDetails = async () => {
     try {
@@ -37,22 +111,80 @@ const TripDetails = () => {
     }
   };
 
+  const fetchFeaturedTrips = async () => {
+    try {
+      const { data } = await tripAPI.getFeaturedTrips();
+      // Filter out current trip and limit to 4 featured trips
+      const filteredTrips = data.filter(featuredTrip => featuredTrip._id !== id).slice(0, 4);
+      setFeaturedTrips(filteredTrips);
+    } catch (error) {
+      console.error('Error fetching featured trips:', error);
+    }
+  };
+
+  const getFeaturedTripImages = (featuredTrip) => {
+    // Check if trip is Rajasthan related
+    const destination = featuredTrip?.destination?.toLowerCase() || '';
+    const title = featuredTrip?.title?.toLowerCase() || '';
+    
+    if (destination.includes('rajasthan') || title.includes('rajasthan') || 
+        title.includes('royal') || title.includes('heritage')) {
+      return rajasthanImages;
+    }
+    
+    // Default to himalaya images for other featured trips
+    return himalayaImages;
+  };
+
+  const getFeaturedTripImage = (featuredTrip) => {
+    const images = getFeaturedTripImages(featuredTrip);
+    const imageIndex = featuredImageIndex[featuredTrip._id] || 0;
+    return images[imageIndex % images.length];
+  };
+
   const getImages = () => {
+    // Check if trip has uploaded images
     if (trip?.images && trip.images.length > 0) {
       return trip.images;
+    }
+    if (trip?.galleryImages && trip.galleryImages.length > 0) {
+      return trip.galleryImages;
     }
     if (trip?.image) {
       return [trip.image];
     }
+    
+    // Check if trip is himalaya/adventure related
+    const destination = trip?.destination?.toLowerCase() || '';
+    const category = trip?.category?.toLowerCase() || '';
+    
+    if (destination.includes('himalaya') || destination.includes('himachal') || 
+        destination.includes('manali') || destination.includes('shimla') ||
+        destination.includes('dharamshala') || destination.includes('kasol') ||
+        category.includes('trekking') || category.includes('adventure') ||
+        destination.includes('mountain') || destination.includes('trek')) {
+      return himalayaImages;
+    }
+    
     return defaultImages;
   };
 
-  const formatBudget = () => {
-    let amount = trip?.customBudget || trip?.budget || trip?.basePrice;
-    let currency = trip?.preferredCurrency || trip?.currency || 'INR';
+  const nextImage = () => {
+    const images = getImages();
+    setCurrentImageIndex(prev => (prev + 1) % images.length);
+  };
+
+  const prevImage = () => {
+    const images = getImages();
+    setCurrentImageIndex(prev => prev === 0 ? images.length - 1 : prev - 1);
+  };
+
+  const formatBudget = (tripData = trip) => {
+    let amount = tripData?.customBudget || tripData?.budget || tripData?.basePrice;
+    let currency = tripData?.preferredCurrency || tripData?.currency || 'INR';
     
-    if (trip?.budgetRange && trip.budgetRange !== 'Custom') {
-      return trip.budgetRange;
+    if (tripData?.budgetRange && tripData.budgetRange !== 'Custom') {
+      return tripData.budgetRange;
     }
     
     if (amount) {
@@ -70,6 +202,19 @@ const TripDetails = () => {
     }
     
     return 'Budget TBD';
+  };
+
+  const formatDateRange = (startDate, endDate) => {
+    const start = new Date(startDate).toLocaleDateString('en-GB', {
+      month: 'short',
+      day: 'numeric'
+    });
+    const end = new Date(endDate).toLocaleDateString('en-GB', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+    return `${start} - ${end}`;
   };
 
   const formatDate = (dateString) => {
@@ -165,41 +310,13 @@ const TripDetails = () => {
           </div>
         </div>
 
-        {/* Component 2: Photo Gallery */}
-        <div className="detail-component photo-gallery-component">
-          <div className="component-header">
-            <h2 className="component-title">2. Photo Gallery</h2>
-          </div>
-          <div className="component-content">
-            <div className="main-image-container">
-              <img 
-                src={images[currentImageIndex]} 
-                alt={`${trip.title} - Image ${currentImageIndex + 1}`}
-                className="main-image"
-                onClick={() => setShowImageModal(true)}
-              />
-              <div className="image-counter">
-                {currentImageIndex + 1} / {images.length}
-              </div>
-            </div>
-            <div className="thumbnail-gallery">
-              {images.map((image, index) => (
-                <img
-                  key={index}
-                  src={image}
-                  alt={`Thumbnail ${index + 1}`}
-                  className={`thumbnail ${index === currentImageIndex ? 'active' : ''}`}
-                  onClick={() => setCurrentImageIndex(index)}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
+        {/* Component 2: Photo Gallery - Removed */}
+        {/* Photo gallery component removed from view details page */}
 
-        {/* Component 3: Trip Dates & Duration */}
+        {/* Component 2: Travel Dates & Duration */}
         <div className="detail-component dates-component">
           <div className="component-header">
-            <h2 className="component-title">3. Travel Dates & Duration</h2>
+            <h2 className="component-title">2. Travel Dates & Duration</h2>
           </div>
           <div className="component-content">
             <div className="dates-grid">
@@ -228,10 +345,10 @@ const TripDetails = () => {
           </div>
         </div>
 
-        {/* Component 4: Budget Information */}
+        {/* Component 3: Budget Information */}
         <div className="detail-component budget-component">
           <div className="component-header">
-            <h2 className="component-title">4. Budget & Pricing</h2>
+            <h2 className="component-title">3. Budget & Pricing</h2>
           </div>
           <div className="component-content">
             <div className="budget-info">
@@ -256,10 +373,10 @@ const TripDetails = () => {
           </div>
         </div>
 
-        {/* Component 5: Activities & Itinerary */}
+        {/* Component 4: Activities & Itinerary */}
         <div className="detail-component activities-component">
           <div className="component-header">
-            <h2 className="component-title">5. Activities & Experiences</h2>
+            <h2 className="component-title">4. Activities & Experiences</h2>
           </div>
           <div className="component-content">
             {trip.activities && trip.activities.length > 0 ? (
@@ -294,10 +411,10 @@ const TripDetails = () => {
           </div>
         </div>
 
-        {/* Component 6: Accommodation Details */}
+        {/* Component 5: Accommodation Details */}
         <div className="detail-component accommodation-component">
           <div className="component-header">
-            <h2 className="component-title">6. Accommodation</h2>
+            <h2 className="component-title">5. Accommodation</h2>
           </div>
           <div className="component-content">
             {trip.accommodation ? (
@@ -319,10 +436,10 @@ const TripDetails = () => {
           </div>
         </div>
 
-        {/* Component 7: Transportation */}
+        {/* Component 6: Transportation */}
         <div className="detail-component transport-component">
           <div className="component-header">
-            <h2 className="component-title">7. Transportation</h2>
+            <h2 className="component-title">6. Transportation</h2>
           </div>
           <div className="component-content">
             {trip.transportation ? (
@@ -341,10 +458,10 @@ const TripDetails = () => {
           </div>
         </div>
 
-        {/* Component 8: Travel Requirements */}
+        {/* Component 7: Travel Requirements */}
         <div className="detail-component requirements-component">
           <div className="component-header">
-            <h2 className="component-title">8. Travel Requirements</h2>
+            <h2 className="component-title">7. Travel Requirements</h2>
           </div>
           <div className="component-content">
             <div className="requirements-grid">
@@ -379,10 +496,10 @@ const TripDetails = () => {
           </div>
         </div>
 
-        {/* Component 9: Weather & Best Time */}
+        {/* Component 8: Weather & Best Time */}
         <div className="detail-component weather-component">
           <div className="component-header">
-            <h2 className="component-title">9. Weather & Climate</h2>
+            <h2 className="component-title">8. Weather & Climate</h2>
           </div>
           <div className="component-content">
             <div className="weather-info">
@@ -408,10 +525,10 @@ const TripDetails = () => {
           </div>
         </div>
 
-        {/* Component 10: Trip Notes & Additional Info */}
+        {/* Component 9: Additional Information */}
         <div className="detail-component notes-component">
           <div className="component-header">
-            <h2 className="component-title">10. Additional Information</h2>
+            <h2 className="component-title">9. Additional Information</h2>
           </div>
           <div className="component-content">
             <div className="notes-section">
@@ -453,6 +570,97 @@ const TripDetails = () => {
             Back to Dashboard
           </button>
         </div>
+
+        {/* Featured Trips Carousel Section */}
+        {featuredTrips.length > 0 && (
+          <div className="detail-component featured-trips-component">
+            <div className="component-header">
+              <h2 className="component-title">10. ⭐ More Featured Adventures</h2>
+            </div>
+            <div className="component-content">
+              <div className="featured-trips-carousel">
+                {featuredTrips.map((featuredTrip, index) => (
+                  <div key={featuredTrip._id} className="featured-trip-card">
+                    <div className="featured-trip-image-container">
+                      <img 
+                        src={getFeaturedTripImage(featuredTrip)} 
+                        alt={featuredTrip.title}
+                        className="featured-trip-image"
+                        onClick={() => navigate(`/trip/${featuredTrip._id}/details`)}
+                      />
+                      <div className="featured-trip-overlay">
+                        <div className="featured-trip-badges">
+                          <div className={`featured-status-badge ${featuredTrip.status || 'planned'}`}>
+                            {(featuredTrip.status || 'Planned').charAt(0).toUpperCase() + (featuredTrip.status || 'planned').slice(1)}
+                          </div>
+                          <div className="featured-star-badge">⭐</div>
+                        </div>
+                        <div className="auto-carousel-badge">
+                          🔄 Auto
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="featured-trip-content">
+                      <h3 className="featured-trip-title">{featuredTrip.title}</h3>
+                      <div className="featured-trip-destination">
+                        <span className="featured-location-icon">📍</span>
+                        {featuredTrip.destinationCity && featuredTrip.destinationCountry 
+                          ? `${featuredTrip.destinationCity}, ${featuredTrip.destinationCountry}` 
+                          : featuredTrip.destination || 'Destination TBD'
+                        }
+                      </div>
+                      
+                      <p className="featured-trip-description">
+                        {featuredTrip.shortDescription || 
+                         (featuredTrip.description && featuredTrip.description.length > 80 
+                           ? featuredTrip.description.substring(0, 80) + '...' 
+                           : featuredTrip.description) || 
+                         'Discover amazing adventures and create unforgettable memories.'}
+                      </p>
+                      
+                      <div className="featured-trip-details">
+                        <div className="featured-detail-item">
+                          <span className="featured-detail-icon">⏱️</span>
+                          <span className="featured-detail-text">
+                            {featuredTrip.startDate && featuredTrip.endDate 
+                              ? formatDateRange(featuredTrip.startDate, featuredTrip.endDate)
+                              : featuredTrip.duration?.days 
+                                ? `${featuredTrip.duration.days} days`
+                                : 'Flexible'
+                            }
+                          </span>
+                        </div>
+                        <div className="featured-detail-item">
+                          <span className="featured-detail-icon">💰</span>
+                          <span className="featured-detail-text">
+                            {formatBudget(featuredTrip)}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <button 
+                        onClick={() => navigate(`/trip/${featuredTrip._id}/details`)} 
+                        className="featured-trip-btn"
+                      >
+                        👁️ View Details
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="featured-trips-footer">
+                <button 
+                  onClick={() => navigate('/featured')} 
+                  className="view-all-featured-btn"
+                >
+                  🌟 View All Featured Trips
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Image Modal */}
@@ -467,7 +675,7 @@ const TripDetails = () => {
             />
             <div className="modal-navigation">
               <button 
-                onClick={() => setCurrentImageIndex(prev => prev > 0 ? prev - 1 : images.length - 1)}
+                onClick={prevImage}
                 className="nav-btn prev-btn"
               >
                 ‹
@@ -476,7 +684,7 @@ const TripDetails = () => {
                 {currentImageIndex + 1} / {images.length}
               </span>
               <button 
-                onClick={() => setCurrentImageIndex(prev => prev < images.length - 1 ? prev + 1 : 0)}
+                onClick={nextImage}
                 className="nav-btn next-btn"
               >
                 ›

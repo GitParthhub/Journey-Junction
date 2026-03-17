@@ -272,21 +272,23 @@
 
 /* Action Buttons */
 .table-actions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  min-width: 180px;
 }
 
 .btn-table {
-  padding: 6px 12px;
+  padding: 7px 10px;
   border: none;
   border-radius: 6px;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
   white-space: nowrap;
+  text-align: center;
+  width: 100%;
 }
 
 .btn-details {
@@ -795,7 +797,8 @@
   }
   
   .table-actions {
-    flex-direction: column;
+    grid-template-columns: 1fr;
+    min-width: unset;
   }
 }
 .category-badge {
@@ -1328,3 +1331,193 @@
   margin: 0;
   padding-left: 52px;
 }
+
+/* Applicant Actions — always show both buttons side by side */
+.applicant-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 100px;
+}
+
+.applicant-actions .btn-table {
+  width: 100%;
+  text-align: center;
+  opacity: 1;
+  transition: all 0.15s ease;
+}
+
+.applicant-actions .btn-table:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.btn-active-status {
+  outline: 2px solid currentColor;
+  outline-offset: 1px;
+}
+
+/* Toast Notification */
+.admin-toast {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 24px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  z-index: 9999;
+  animation: toastIn 0.3s ease;
+  max-width: 480px;
+  width: 90%;
+}
+
+.admin-toast-success {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+}
+
+.admin-toast-error {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+}
+
+.admin-toast-close {
+  background: rgba(255,255,255,0.25);
+  border: none;
+  color: white;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+
+.admin-toast-close:hover { background: rgba(255,255,255,0.4); }
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(16px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* ── Trip Status Tab ── */
+.trip-status-tab { padding: 24px; }
+
+.status-subtabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.status-subtab-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  background: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #4a5568;
+}
+
+.status-subtab-btn:hover { border-color: #00798C; color: #00798C; transform: translateY(-1px); }
+
+.status-subtab-btn.active.planned  { background: #DBEAFE; border-color: #1E40AF; color: #1E40AF; }
+.status-subtab-btn.active.ongoing  { background: #FEF3C7; border-color: #D97706; color: #D97706; }
+.status-subtab-btn.active.completed { background: #D1FAE5; border-color: #059669; color: #059669; }
+
+.status-count-badge {
+  background: rgba(0,0,0,0.1);
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.status-trip-title {
+  font-weight: 600;
+  color: #1a202c;
+  font-size: 13px;
+  max-width: 180px;
+}
+
+.featured-mini-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, #EDAE49, #D1495B);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 8px;
+  margin-top: 4px;
+}
+
+.status-user-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-user-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #00798C, #30638E);
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.applicants-count-pill {
+  background: #e2e8f0;
+  color: #4a5568;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status-change-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 110px;
+}
+
+.btn-status-change {
+  width: 100%;
+  text-align: center;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.btn-status-planned  { background: #DBEAFE; color: #1E40AF; border: 1px solid #93C5FD; }
+.btn-status-ongoing  { background: #FEF3C7; color: #D97706; border: 1px solid #FCD34D; }
+.btn-status-completed { background: #D1FAE5; color: #059669; border: 1px solid #6EE7B7; }
+
+.btn-status-planned:hover  { background: #BFDBFE; transform: translateY(-1px); }
+.btn-status-ongoing:hover  { background: #FDE68A; transform: translateY(-1px); }
+.btn-status-completed:hover { background: #A7F3D0; transform: translateY(-1px); }
